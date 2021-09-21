@@ -1,4 +1,8 @@
-# GeoNode MapStore Client [![Build Status](https://travis-ci.org/GeoNode/geonode-mapstore-client.svg?branch=master)](https://travis-ci.org/GeoNode/geonode-mapstore-client) [![Code Climate](https://codeclimate.com/github/GeoNode/geonode-viewer/badges/gpa.svg)](https://codeclimate.com/github/GeoNode/geonode-viewer) [![Test Coverage](https://codecov.io/gh/GeoNode/geonode/branch/master/graph/badge.svg)](https://codecov.io/gh/GeoNode/geonode/branch/master)
+# MapSaudi MapStore Client
+
+This is a customized version of [GeoNode MapStore Client](https://github.com/GeoNode/geonode-mapstore-client) for [MapSaudi](https://mapsaudi.com) homepage.
+
+As MapSaudi is now running on [Cartoview](https://cartoview.net/) version 1.32, please refer to branch `3.2.x` on this repository for now.
 
 MapStore is an Open Source WebGIS framework based on ReactJS and it can be integrated inside GeoNode as maps, layers and apps viewer. GeoNode
 
