@@ -1,4 +1,17 @@
-# GeoNode MapStore Client [![Build Status](https://travis-ci.org/GeoNode/geonode-mapstore-client.svg?branch=master)](https://travis-ci.org/GeoNode/geonode-mapstore-client) [![Code Climate](https://codeclimate.com/github/GeoNode/geonode-viewer/badges/gpa.svg)](https://codeclimate.com/github/GeoNode/geonode-viewer) [![Test Coverage](https://codecov.io/gh/GeoNode/geonode/branch/master/graph/badge.svg)](https://codecov.io/gh/GeoNode/geonode/branch/master)
+# MapSaudi MapStore Client
+
+This is a customized version of [GeoNode MapStore Client](https://github.com/GeoNode/geonode-mapstore-client) `3.2.1` for [MapSaudi](https://mapsaudi.com) homepage.
+
+As MapSaudi is now running on [Cartoview-1.32.0](https://cartoview.net/) with GeoNode-3.2.1, a created branch called `mapsaudi-customization` is forked from [geonode-mapstore-client-3.2.1](https://github.com/GeoNode/geonode-mapstore-client/releases/tag/3.2.1) release.
+
+This branch will hold all the required customizations for MapSaudi home page, replacing old `django_geonode_mapstore_client` package.
+
+Expected version in requirement.txt for MapSaudi repository:
+```
+-e git+https://github.com/cartologic/mapsaudi-mapstore-client.git@mapsaudi-customization#egg=django_geonode_mapstore_client
+```
+
+---
 
 MapStore is an Open Source WebGIS framework based on ReactJS and it can be integrated inside GeoNode as maps, layers and apps viewer. GeoNode 
 
@@ -216,15 +229,15 @@ Steps needed for the initial setup, Open a terminal in your workspace directory 
 
 - Clone the repository in your workspace:
 
-`git clone --recursive https://github.com/GeoNode/geonode-mapstore-client.git`
+`git clone --recursive https://github.com/cartologic/mapsaudi-mapstore-client.git`
 
-- A new `geonode-mapstore-client/` should be available in your workspace.
+- A new `mapsaudi-mapstore-client/` should be available in your workspace.
 
-Note: ensure the `geonode-mapstore-client/geonode_mapstore_client/client/MapStore2` is not empty. If the `geonode-mapstore-client/geonode_mapstore_client/client/MapStore2` is empty run the command `git submodule update` inside the `geonode-mapstore-client/` directory.
+Note: ensure the `mapsaudi-mapstore-client/geonode_mapstore_client/client/MapStore2` is not empty. If the `mapsaudi-mapstore-client/geonode_mapstore_client/client/MapStore2` is empty run the command `git submodule update` inside the `mapsaudi-mapstore-client/` directory.
 
 - Change directory to the client folder:
 
-`cd geonode-mapstore-client/geonode_mapstore_client/client/`
+`cd mapsaudi-mapstore-client/geonode_mapstore_client/client/`
 
 - Install all package dependencies with the command:
 
@@ -262,7 +275,7 @@ eg.
 
 - Change directory to the client one:
 
-`cd geonode-mapstore-client/geonode_mapstore_client/client/`
+`cd mapsaudi-mapstore-client/geonode_mapstore_client/client/`
 
 - Start the development application locally:
 
@@ -291,7 +304,7 @@ These is the summary of needed build steps:
 - Commit all previous changes on the source code
 - Change directory to the client one:
 
-`cd geonode-mapstore-client/geonode_mapstore_client/client/`
+`cd mapsaudi-mapstore-client/geonode_mapstore_client/client/`
 
 - Run lint script
 
