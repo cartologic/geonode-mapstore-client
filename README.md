@@ -1,8 +1,8 @@
 # MapSaudi MapStore Client
 
-This is a customized version of [GeoNode MapStore Client](https://github.com/GeoNode/geonode-mapstore-client) for [MapSaudi](https://mapsaudi.com) homepage.
+This is a customized version of [GeoNode MapStore Client](https://github.com/GeoNode/geonode-mapstore-client) `3.2.1` for [MapSaudi](https://mapsaudi.com) homepage.
 
-As MapSaudi is now running on [Cartoview](https://cartoview.net/) version 1.32, please refer to branch `3.2.x` on this repository for now.
+As MapSaudi is now running on [Cartoview-1.32.0](https://cartoview.net/) with GeoNode-3.2.1, a created branch called `mapsaudi-customization` is forked from [geonode-mapstore-client-3.2.1](https://github.com/GeoNode/geonode-mapstore-client/releases/tag/3.2.1) release.
 
 MapStore is an Open Source WebGIS framework based on ReactJS and it can be integrated inside GeoNode as maps, layers and apps viewer. GeoNode
 
