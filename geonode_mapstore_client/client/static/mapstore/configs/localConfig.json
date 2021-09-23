@@ -176,6 +176,18 @@
                 "color": "#4bae53",
                 "hoverColor": "#3c763d"
             },
+            "focus": {
+                "color": "#4bae53"
+            },
+            "bodyShade": {
+                "color": "#4bae53"
+            },
+            "tag": {
+                "hoverColor": "#000",
+                "hoverBg": "#4bae53",
+                "activeColor": "#fffff",
+                "activeBg": "#000"
+            },
             "navbar": {
                 "style": {}
             },
