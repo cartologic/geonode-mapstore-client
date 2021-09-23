@@ -59,20 +59,6 @@ const ResourceCard = forwardRef(({
                         {res.title}
                     </a>
                 </Card.Title>
-                <Card.Text
-                    className="gn-card-description"
-                >
-                    {res.raw_abstract ? res.raw_abstract : '...'}
-                </Card.Text>
-                <Card.Text
-                    lassName="gn-card-user"
-                >
-                    <Message msgId="gnhome.author"/>: <a href={formatHref({
-                        query: {
-                            'filter{owner.username.in}': res.owner.username
-                        }
-                    })}>{getUserName(res.owner)}</a>
-                </Card.Text>
                 {links && links.length > 0 && <Dropdown
                     className="gn-card-options"
                     alignRight
