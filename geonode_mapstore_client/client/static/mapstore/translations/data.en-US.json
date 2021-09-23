@@ -16,7 +16,7 @@
             }
         },
         "gnhome": {
-            "description": "<h1>GeoNode</h1><p>sharing geospatial data and maps.</p>",
+            "description": "<div style='text-align:center;padding-bottom:4rem;'><h1 style='font-size:38px;font-weight:700;'>Saudi Geographical Open Data Portal</h1></div>",
             "orderBy": "Order by",
             "mostRecent": "Most recent",
             "lessRecent": "Less recent",
@@ -91,7 +91,9 @@
             "developers": "Developers",
             "customFilterExample": "Custom filter (Global)",
             "copiedResourceUrl": "Resource url copied!",
-            "copyResourceUrl": "Copy resource url"
+            "copyResourceUrl": "Copy resource url",
+            "browseCategories": "Browse Categories",
+            "contactUs": "Contact Us"
         }
     }
 }
