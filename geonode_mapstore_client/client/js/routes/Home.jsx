@@ -438,6 +438,8 @@ function Home({
             <Footer
                 ref={footerNode}
                 footerItems={footer.items}
+                footerCopyright={footer.copyright}
+                footerRightItems={footer.rightItems}
                 style={theme?.footer?.style}
             />
         </div>

@@ -29,34 +29,66 @@ function FooterItem({
 
 const Footer = forwardRef(({
     footerItems,
+    footerCopyright,
+    footerRightItems,
     user,
     style
 }, ref) => {
     const state = {
         user
     };
+    const rightItems = [
+        {
+            lableId: "gnhome.contactUs",
+            href: "/contact-us/"
+        },
+        {
+            lableId: "gnhome.browseCategories",
+            href: "/categories/"
+        }
+    ];
     return (
         <footer
             ref={ref}
             className="gn-footer"
             style={style}
         >
-            <div>
-                <ul>
-                    {footerItems
-                        .filter((item) => filterMenuItems(state, item))
-                        .map((item, idx) => {
-                            return (
-                                <li key={idx}>
-                                    <FooterItem
-                                        item={{ ...item, id: item.id || idx }}
-                                        state={state}
-                                    />
-                                </li>
-                            );
-                        })}
-                </ul>
-            </div>
+            <ul>
+                {
+                    footerItems
+                    .filter((item) => filterMenuItems(state, item))
+                    .map((item, idx) => {
+                        return (
+                            <li key={idx}>
+                                <FooterItem
+                                    item={{ ...item, id: item.id || idx }}
+                                    state={state}
+                                />
+                            </li>
+                        );
+                    })
+                }
+            </ul>
+            <span className="copyRight">
+                {footerCopyright}
+                <a href="http://cartologic.com/">
+                    <span className="companyName">Cartologic</span>
+                </a>
+            </span>
+            <ul className="contact-us">
+                {
+                    footerRightItems.map((item, idx) => {
+                        return (
+                            <li key={idx}>
+                                <FooterItem
+                                    item={{ ...item, id: item.id || idx }}
+                                    state={state}
+                                />
+                            </li>
+                        )
+                    })
+                }
+            </ul>
         </footer>
     );
 });

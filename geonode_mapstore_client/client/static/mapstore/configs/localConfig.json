@@ -432,7 +432,10 @@
                     "type": "link",
                     "href": "/documents/?limit=50",
                     "badge": "${documentsTotalCount}"
-                },
+                }
+            ],
+            "copyright": "Copyright © 2021 All Rights Reserved by",
+            "rightItems": [
                 {
                     "labelId": "gnhome.contactUs",
                     "type": "link",
