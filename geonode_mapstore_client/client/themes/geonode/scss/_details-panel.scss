@@ -33,13 +33,14 @@
 
 .gn-details-panel-header {
     display: flex;
-    flex-direction: row-reverse;
+    flex-direction: row;
+    padding: 20px;
 }
 
 .gn-details-panel-preview {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%;
+    padding-bottom: 75%;
     color: $gn-image-color;
     background-color: $gn-image-bg;
     .gn-details-panel-preview-loader {
@@ -52,14 +53,23 @@
     font-size: 0.9em;
 }
 
+.gn-details-panel-content .gn-date-category {
+    display: flex;
+    font-weight: bold;
+}
+
+.gn-details-panel-content .gn-date-category p {
+    margin-right: 5px;
+}
+
 .gn-details-panel-title {
     display: flex;
-    margin-bottom: 1rem;
     h1 {
         flex: 1;
         word-break: break-word;
         font-size: 1.2rem;
         margin: 0;
+        color: #3c763d;
         .fa {
             margin: 0;
             margin-right: 0.6rem;
@@ -75,5 +85,25 @@
     img {
         width: 100% !important;
         height: auto !important;
+    }
+}
+
+.gn-details-panel-tools {
+    .gn-resource-tooltip-metadata {
+        border-radius: 16px;
+        background-color: #000;
+        margin: 4px;
+        span {
+            padding: 0 5px;
+        }
+    }
+
+    .resource-btn {
+        background-color: #000;
+        margin-right: 10px;
+        font-weight: bold;
+        span {
+            padding: 0 5px;
+        }
     }
 }

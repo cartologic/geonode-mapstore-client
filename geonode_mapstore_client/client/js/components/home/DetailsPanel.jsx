@@ -109,6 +109,12 @@ function DetailsPanel({
         >
             <section style={sectionStyle}>
                 <div className="gn-details-panel-header">
+                    <div className="gn-details-panel-title">
+                        <h1>
+                            {icon && <><FaIcon name={icon}/></>}
+                            {resource?.title}
+                        </h1>
+                    </div>
                     <Button
                         variant="default"
                         href={formatHref({
@@ -171,66 +177,86 @@ function DetailsPanel({
                     </div>}
                 </div>
                 <div className="gn-details-panel-content">
-                    <div className="gn-details-panel-title">
-                        <h1>
-                            {icon && <><FaIcon name={icon}/></>}
-                            {resource?.title}
-                        </h1>
-                        <div className="gn-details-panel-tools">
-                            {resource && <OverlayTrigger
+                    <div className="gn-date-category">
+                        <p title="Date">
+                            {
+                                (resource?.date_type && resource?.date) && moment(resource.date).format('DD-MM-YYYY')
+                            }
+                        </p>
+                        <p> - </p>
+                        <p title="Category">
+                            {
+                                resource?.category?.identifier && 
+                                <div>
+                                    <a
+                                        href={formatHref({
+                                            query: {
+                                                'filter{category.identifier.in}': resource.category.identifier
+                                            }
+                                        })}
+                                    >
+                                        {resource.category.identifier}
+                                    </a>
+                                </div>
+                            }
+                        </p>
+                    </div>
+                    <div className="gn-details-panel-tools">
+                        {
+                            resource?.detail_url && 
+                            <Button
+                                variant="default"
+                                href={resource.detail_url}
+                                className="resource-btn"
+                            >
+                                <FaIcon name="download" />
+                                <Message msgId={`gnhome.download${name || ''}`}/>
+                            </Button>
+                        }
+                        {
+                            resource?.detail_url && 
+                            <Button
+                                variant="default"
+                                href={resource.detail_url}
+                                className="resource-btn"
+                            >
+                                <FaIcon name="info-circle" />
+                                <Message msgId={`gnhome.${name || ''}Info`}/>
+                            </Button>
+                        }
+                        {
+                            resource && 
+                            <OverlayTrigger
                                 placement="top"
                                 overlay={(props) =>
-                                    <Tooltip id="share-resource-tooltip" {...props}>
-                                        <Message msgId={
-                                            copiedResourceLink
-                                                ? 'gnhome.copiedResourceUrl'
-                                                : 'gnhome.copyResourceUrl'
-                                        }/>
-                                    </Tooltip>}
-                            >
-                                <CopyToClipboard
-                                    text={formatResourceLinkUrl(resource.detail_url)}
-                                >
-                                    <Button
-                                        variant="default"
-                                        onClick={handleCopyPermalink}>
-                                        <FaIcon name="share-alt" />
-                                    </Button>
-                                </CopyToClipboard>
-                            </OverlayTrigger>}
-                            {resource?.detail_url && <Button
-                                variant="default"
-                                href={resource.detail_url}>
-                                <Message msgId={`gnhome.view${name || ''}`}/>
-                            </Button>}
-                        </div>
-                    </div>
-                    <p>
-                        {resource?.owner && <><a href={formatHref({
-                            query: {
-                                'filter{owner.username.in}': resource.owner.username
-                            }
-                        })}>{getUserName(resource.owner)}</a></>}
-                        {(resource?.date_type && resource?.date)
-                            && <>{' '}/{' '}{ moment(resource.date).format('MMMM Do YYYY')}</>}
-                    </p>
-                    <p>
-                        <div className="gn-details-panel-description">{
-                            resource?.abstract ?
-                                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(resource.abstract) }} />
-                                : null
-                        }</div>
-                    </p>
-                    <p>
-                        {resource?.category?.identifier && <div>
-                            <Message msgId="gnhome.category"/>:{' '}
-                            <a href={formatHref({
-                                query: {
-                                    'filter{category.identifier.in}': resource.category.identifier
+                                    <Tooltip id="popular_count-resource-tooltip" {...props}>
+                                        <Message msgId="gnhome.popularCount"/>
+                                    </Tooltip>
                                 }
-                            })}>{resource.category.identifier}</a>
-                        </div>}
-                    </p>
+                            >
+                                <Button variant="default" className="gn-resource-tooltip-metadata">
+                                    <FaIcon name="eye" />
+                                    <span>{resource.popular_count}</span>
+                                </Button>
+                            </OverlayTrigger>
+                        }
+                        {
+                            resource && 
+                            <OverlayTrigger
+                                placement="top"
+                                overlay={(props) =>
+                                    <Tooltip id="share_count-resource-tooltip" {...props}>
+                                        <Message msgId="gnhome.shareCount"/>
+                                    </Tooltip>
+                                }
+                            >
+                                <Button variant="default" className="gn-resource-tooltip-metadata">
+                                    <FaIcon name="share-alt" />
+                                    <span>{resource.share_count}</span>
+                                </Button>
+                            </OverlayTrigger>
+                        }
+                    </div>
                 </div>
             </section>
         </div>
