@@ -50,14 +50,19 @@
     }
     .card-title {
         font-size: 0.875rem;
+        margin-bottom: 0em;
         .fa {
+            color: #4BAE53;
             margin: 0;
             margin-right: 0.4rem;
+            @include hover() {
+                color: #3c763d;
+            }
         }
         a {
             color: $gn-body-color;
             @include hover() {
-                text-decoration: underline;
+                font-weight: bold;
             }
         }
     }
