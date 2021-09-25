@@ -184,22 +184,20 @@ function DetailsPanel({
                             }
                         </p>
                         <p> - </p>
-                        <p title="Category">
-                            {
-                                resource?.category?.identifier && 
-                                <div>
-                                    <a
-                                        href={formatHref({
-                                            query: {
-                                                'filter{category.identifier.in}': resource.category.identifier
-                                            }
-                                        })}
-                                    >
-                                        {resource.category.identifier}
-                                    </a>
-                                </div>
-                            }
-                        </p>
+                        {
+                            resource?.category?.identifier && 
+                            <div title="Category">
+                                <a
+                                    href={formatHref({
+                                        query: {
+                                            'filter{category.identifier.in}': resource.category.identifier
+                                        }
+                                    })}
+                                >
+                                    {resource.category.identifier}
+                                </a>
+                            </div>
+                        }
                     </div>
                     <div className="gn-details-panel-tools">
                         {

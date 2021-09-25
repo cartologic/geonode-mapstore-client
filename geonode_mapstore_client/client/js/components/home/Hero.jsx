@@ -27,9 +27,9 @@ const Hero = forwardRef(({
                 <div className="gn-hero-description">
                     <HTML msgId="gnhome.description"/>
                 </div>
-                <p className="gn-hero-tools">
+                <div className="gn-hero-tools">
                     {children}
-                </p>
+                </div>
             </Jumbotron>
         </div>
     );

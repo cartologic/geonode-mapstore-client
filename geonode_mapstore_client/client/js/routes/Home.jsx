@@ -452,7 +452,7 @@ Home.propTypes = {
     location: PropTypes.object,
     match: PropTypes.object,
     plugins: PropTypes.object,
-    pluginsConfig: PropTypes.array,
+    pluginsConfig: PropTypes.object,
     background: PropTypes.object,
     logo: PropTypes.array,
     jumbotron: PropTypes.object
