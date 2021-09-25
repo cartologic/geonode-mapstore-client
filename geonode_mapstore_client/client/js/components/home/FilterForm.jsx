@@ -13,7 +13,7 @@ import ReactSelect from 'react-select';
 import Message from '@mapstore/framework/components/I18N/Message';
 import localizedProps from '@mapstore/framework/components/misc/enhancers/localizedProps';
 import FaIcon from '@js/components/home/FaIcon';
-import FilterByExtent from '@js/components/home/FilterByExtent';
+// import FilterByExtent from '@js/components/home/FilterByExtent';
 import { getFilterLabelById } from '@js/utils/GNSearchUtils';
 
 const SelectSync = localizedProps('placeholder')(ReactSelect);
@@ -147,7 +147,7 @@ function FilterForm({
                             );
                         })}
                     </Col>}
-                    <Col style={{
+                    {/* <Col style={{
                         height: leftColumnNode.current?.clientHeight || 400
                     }}>
                         <FilterByExtent
@@ -163,7 +163,7 @@ function FilterForm({
                                 })
                             }
                         />
-                    </Col>
+                    </Col> */}
                 </Form.Row>
             </Form>
             <div className="gn-filter-form-footer">
