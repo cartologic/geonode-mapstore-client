@@ -94,7 +94,9 @@ const Footer = forwardRef(({
 });
 
 Footer.defaultProps = {
-    footerItems: []
+    footerItems: [],
+    footerCopyright: '',
+    footerRightItems: []
 };
 
 export default Footer;
