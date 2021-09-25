@@ -26,6 +26,11 @@
         "endpointV1": "/api",
         "endpointV2": "/api/v2"
     },
+    "translationsPath": [
+        "/static/mapstore/ms-translations",
+        "/static/mapstore/gn-translations",
+        "/static/mapstore/translations"
+    ],
     "mapLayout": {
         "preview": {
             "left": {
@@ -158,32 +163,57 @@
         "en": {
             "code": "en-US",
             "description": "English"
-        },
-        "it": {
-            "code": "it-IT",
-            "description": "Italiano"
-        },
-        "fr": {
-            "code": "fr-FR",
-            "description": "Français"
-        },
-        "de": {
-            "code": "de-DE",
-            "description": "Deutsch"
-        },
-        "es": {
-            "code": "es-ES",
-            "description": "Español"
         }
     },
     "geoNodeConfiguration": {
         "theme": {
             "variant": "light",
+            "color": "#4bae53",
+            "body": {
+                "color": "#4bae53"
+            },
+            "link": {
+                "color": "#4bae53",
+                "hoverColor": "#3c763d"
+            },
+            "focus": {
+                "color": "#4bae53"
+            },
+            "bodyShade": {
+                "color": "#4bae53"
+            },
+            "tag": {
+                "hoverColor": "#000",
+                "hoverBg": "#4bae53",
+                "activeColor": "#fffff",
+                "activeBg": "#000"
+            },
             "navbar": {
                 "style": {}
             },
             "hero": {
-                "style": {}
+                "style": {
+                    "backgroundImage": "url(/static/mapstore/img/header-bg.jpg)",
+                    "backgroundSize": "cover",
+                    "backgroundPosition": "center",
+                    "backgroundRepeat": "no-repeat"
+                }
+            },
+            "jumbotron": {
+                "style": {
+                    "maxWidth": 1440
+                }
+            },
+            "languageSelector": {
+                "inline": true
+            },
+            "footer": {
+                "bg": "#222831",
+                "color": "#ffffff",
+                "link": {
+                    "color": "#ffffff",
+                    "hoverColor": "#dddddd"
+                }
             }
         },
         "filters": {
@@ -202,22 +232,10 @@
                         "suggestionsRequestKey": "categories"
                     },
                     {
-                        "labelId": "gnhome.keywords",
-                        "placeholderId": "gnhome.keywordsPlaceholder",
-                        "type": "select",
-                        "suggestionsRequestKey": "keywords"
-                    },
-                    {
                         "labelId": "gnhome.regions",
                         "placeholderId": "gnhome.regionsPlaceholder",
                         "type": "select",
                         "suggestionsRequestKey": "regions"
-                    },
-                    {
-                        "labelId": "gnhome.owners",
-                        "placeholderId": "gnhome.ownersPlaceholder",
-                        "type": "select",
-                        "suggestionsRequestKey": "owners"
                     }
                 ]
             },
@@ -274,17 +292,19 @@
         "navbar": {
             "logo": [
                 {
-                    "src": "/static/mapstore/img/geonode-logo.svg",
-                    "href": "#/"
+                    "src": "/static/mapstore/img/logo/en.png",
+                    "href": "/",
+                    "style": {
+                        "minHeight": 80
+                    },
+                    "sm": {
+                        "style": {
+                            "minHeight": 40
+                        }
+                    }
                 }
             ],
             "items": [
-                {
-                    "labelId": "gnhome.register",
-                    "type": "link",
-                    "href": "/account/signup/?next=/",
-                    "authenticated": false
-                },
                 {
                     "labelId": "gnhome.signIn",
                     "type": "link",
@@ -361,160 +381,65 @@
         "menu": {
             "items": [
                 {
-                    "labelId": "gnhome.data",
-                    "type": "dropdown",
-                    "items": [
-                        {
-                            "type": "link",
-                            "href": "/layers/?limit=5",
-                            "labelId": "gnhome.layers",
-                            "badge": "${layersTotalCount}"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/documents/?limit=5",
-                            "labelId": "gnhome.documents",
-                            "badge": "${documentsTotalCount}"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/services/?limit=5",
-                            "labelId": "gnhome.remoteServices"
-                        },
-                        {
-                            "type": "divider",
-                            "authenticated": true
-                        },
-                        {
-                            "type": "link",
-                            "href": "/layers/upload",
-                            "labelId": "gnhome.uploadLayer",
-                            "authenticated": true
-                        },
-                        {
-                            "type": "link",
-                            "href": "/documents/upload",
-                            "labelId": "gnhome.uploadDocument",
-                            "authenticated": true
-                        },
-                        {
-                            "type": "link",
-                            "href": "/services/register/",
-                            "labelId": "gnhome.addRemoteService",
-                            "authenticated": true,
-                            "allowedGroups": [
-                                "admin"
-                            ]
-                        }
-                    ]
+                    "labelId": "gnhome.layers",
+                    "type": "link",
+                    "href": "/layers/?limit=50",
+                    "badge": "${layersTotalCount}"
                 },
                 {
                     "labelId": "gnhome.maps",
                     "type": "link",
-                    "href": "/maps/?limit=5",
-                    "authenticated": false,
+                    "href": "/maps/?limit=50",
                     "badge": "${mapsTotalCount}"
                 },
                 {
-                    "labelId": "gnhome.maps",
-                    "type": "dropdown",
-                    "authenticated": true,
-                    "badge": "${mapsTotalCount}",
-                    "items": [
-                        {
-                            "type": "link",
-                            "href": "/maps/?limit=5",
-                            "labelId": "gnhome.exploreMaps"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/maps/new",
-                            "labelId": "gnhome.createMap"
-                        }
-                    ]
-                },
-                {
+                    "labelId": "gnhome.documents",
                     "type": "link",
-                    "href": "/apps/?limit=5",
-                    "labelId": "gnhome.apps",
-                    "badge": "${geoappsTotalCount}"
+                    "href": "/documents/?limit=50",
+                    "badge": "${documentsTotalCount}"
+                }
+            ],
+            "rightItems": [
+                {
+                    "labelId": "gnhome.browseCategories",
+                    "type": "link",
+                    "href": "/categories/",
+                    "style": {
+                        "fontWeight": "bold"
+                    }
                 },
                 {
-                    "labelId": "gnhome.about",
-                    "type": "dropdown",
-                    "items": [
-                        {
-                            "type": "link",
-                            "href": "/people/",
-                            "labelId": "gnhome.people"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/groups/",
-                            "labelId": "gnhome.groups"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/groups/categories/",
-                            "labelId": "gnhome.groupsCategories"
-                        },
-                        {
-                            "type": "link",
-                            "href": "/announcements/",
-                            "labelId": "gnhome.announcements",
-                            "authenticated": true,
-                            "allowedGroups": [
-                                "admin"
-                            ]
-                        },
-                        {
-                            "type": "divider",
-                            "authenticated": true
-                        },
-                        {
-                            "type": "link",
-                            "href": "/invitations/geonode-send-invite/",
-                            "labelId": "gnhome.inviteUsers",
-                            "authenticated": true
-                        },
-                        {
-                            "type": "link",
-                            "href": "/admin/people/profile/add/",
-                            "labelId": "gnhome.addUser",
-                            "authenticated": true,
-                            "allowedGroups": [
-                                "admin"
-                            ]
-                        },
-                        {
-                            "type": "link",
-                            "href": "/groups/create/",
-                            "labelId": "gnhome.createGroup",
-                            "authenticated": true,
-                            "allowedGroups": [
-                                "admin"
-                            ]
-                        }
-                    ]
+                    "type": "divider"
                 }
             ]
         },
         "footer": {
             "items": [
                 {
-                    "label": "geonode.org",
+                    "labelId": "gnhome.layers",
                     "type": "link",
-                    "href": "https://geonode.org/"
+                    "href": "/layers/?limit=50",
+                    "badge": "${layersTotalCount}"
                 },
                 {
-                    "labelId": "gnhome.developers",
+                    "labelId": "gnhome.maps",
                     "type": "link",
-                    "href": "/developer/"
+                    "href": "/maps/?limit=50",
+                    "badge": "${mapsTotalCount}"
                 },
                 {
-                    "labelId": "gnhome.about",
+                    "labelId": "gnhome.documents",
                     "type": "link",
-                    "href": "/about/"
+                    "href": "/documents/?limit=50",
+                    "badge": "${documentsTotalCount}"
+                }
+            ],
+            "copyright": "Copyright © 2021 All Rights Reserved by",
+            "rightItems": [
+                {
+                    "labelId": "gnhome.contactUs",
+                    "type": "link",
+                    "href": "/contact-us/"
                 }
             ]
         }
