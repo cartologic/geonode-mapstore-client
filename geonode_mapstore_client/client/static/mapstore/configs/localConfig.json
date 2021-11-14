@@ -401,12 +401,14 @@
             ],
             "rightItems": [
                 {
+                    "labelId": "gnhome.featuredApps",
+                    "type": "link",
+                    "href": "/featured-apps/"
+                },
+                {
                     "labelId": "gnhome.browseCategories",
                     "type": "link",
-                    "href": "/categories/",
-                    "style": {
-                        "fontWeight": "bold"
-                    }
+                    "href": "/categories/"
                 },
                 {
                     "type": "divider"
