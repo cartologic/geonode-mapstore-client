@@ -27,6 +27,7 @@
   "author": "GeoSolutions",
   "license": "BSD-2-Clause",
   "devDependencies": {
+    "webpack-cli": "4.9.0",
     "@mapstore/project": "1.0.7"
   },
   "dependencies": {
