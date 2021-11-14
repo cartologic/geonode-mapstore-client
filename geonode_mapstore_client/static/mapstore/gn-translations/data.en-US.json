@@ -39,6 +39,7 @@
             "downloadDocument": "Download document",
             "viewImage": "View image",
             "viewVideo": "View video",
+            "download": "Download",
             "Info": "Info",
             "LayerInfo": "Layer info",
             "MapInfo": "Map info",
@@ -99,6 +100,7 @@
             "copiedResourceUrl": "Resource url copied!",
             "copyResourceUrl": "Copy resource url",
             "browseCategories": "Browse Categories",
+            "featuredApps": "Apps",
             "contactUs": "Contact Us"
         }
     }
