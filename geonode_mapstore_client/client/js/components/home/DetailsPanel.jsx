@@ -186,7 +186,7 @@ function DetailsPanel({
                                 className="resource-btn"
                             >
                                 <FaIcon name="download" />
-                                <Message msgId={`gnhome.download${name || ''}`}/>
+                                <Message msgId="gnhome.download" />
                             </Button>
                         }
                         {
@@ -197,7 +197,7 @@ function DetailsPanel({
                                 className="resource-btn"
                             >
                                 <FaIcon name="info-circle" />
-                                <Message msgId={`gnhome.${name || ''}Info`}/>
+                                <Message msgId="gnhome.Info" />
                             </Button>
                         }
                         {
