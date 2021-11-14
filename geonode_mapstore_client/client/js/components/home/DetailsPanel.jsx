@@ -177,28 +177,6 @@ function DetailsPanel({
                     </div>}
                 </div>
                 <div className="gn-details-panel-content">
-                    <div className="gn-date-category">
-                        <p title="Date">
-                            {
-                                (resource?.date_type && resource?.date) && moment(resource.date).format('DD-MM-YYYY')
-                            }
-                        </p>
-                        <p> - </p>
-                        {
-                            resource?.category?.identifier && 
-                            <div title="Category">
-                                <a
-                                    href={formatHref({
-                                        query: {
-                                            'filter{category.identifier.in}': resource.category.identifier
-                                        }
-                                    })}
-                                >
-                                    {resource.category.identifier}
-                                </a>
-                            </div>
-                        }
-                    </div>
                     <div className="gn-details-panel-tools">
                         {
                             resource?.detail_url && 
@@ -254,6 +232,30 @@ function DetailsPanel({
                                 </Button>
                             </OverlayTrigger>
                         }
+                        <div className="gn-date-category">
+                            <p title="Date">
+                                {
+                                    (resource?.date_type && resource?.date) && moment(resource.date).format('DD-MM-YYYY')
+                                }
+                            </p>
+                            {
+                                resource?.category?.identifier && 
+                                <>
+                                    <p> - </p>
+                                    <div title="Category">
+                                        <a
+                                            href={formatHref({
+                                                query: {
+                                                    'filter{category.identifier.in}': resource.category.identifier
+                                                }
+                                            })}
+                                        >
+                                            {resource.category.identifier}
+                                        </a>
+                                    </div>
+                                </>
+                            }
+                        </div>
                     </div>
                 </div>
             </section>
