@@ -78,7 +78,7 @@ $large: 1024px;
         word-break: break-word;
         font-size: 1.2rem;
         margin: 0;
-        color: #3c763d;
+        color: #06332f;
         .fa {
             margin: 0;
             margin-right: 0.6rem;
@@ -105,7 +105,8 @@ $large: 1024px;
 
     .gn-resource-tooltip-metadata {
         border-radius: 16px;
-        background-color: #000;
+        color: #E8F8FB !important;
+        background-color: #324e5d;
         margin: 4px;
         span {
             padding: 0 5px;
@@ -113,7 +114,8 @@ $large: 1024px;
     }
 
     .resource-btn {
-        background-color: #000;
+        color: #E8F8FB !important;
+        background-color: #324e5d;
         margin-right: 10px;
         font-weight: bold;
         span {
