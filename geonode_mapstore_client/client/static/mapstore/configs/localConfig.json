@@ -1,6 +1,6 @@
 {
     "proxyUrl": {
-        "url": "?url=",
+        "url": "proxy/?url=",
         "useCORS": []
     },
     "useAuthenticationRules": true,
@@ -388,19 +388,19 @@
                 {
                     "labelId": "gnhome.layers",
                     "type": "link",
-                    "href": "/resources/#/?filter{resource_type.in}=layer",
+                    "href": "/proxy/#/?filter{resource_type.in}=layer",
                     "badge": "${layersTotalCount}"
                 },
                 {
                     "labelId": "gnhome.maps",
                     "type": "link",
-                    "href": "/resources/#/?filter{resource_type.in}=map",
+                    "href": "/proxy/#/?filter{resource_type.in}=map",
                     "badge": "${mapsTotalCount}"
                 },
                 {
                     "labelId": "gnhome.documents",
                     "type": "link",
-                    "href": "/resources/#/?filter{resource_type.in}=document",
+                    "href": "/proxy/#/?filter{resource_type.in}=document",
                     "badge": "${documentsTotalCount}"
                 }
             ],
