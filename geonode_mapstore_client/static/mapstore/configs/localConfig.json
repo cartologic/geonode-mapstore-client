@@ -404,16 +404,6 @@
                     "badge": "${documentsTotalCount}"
                 }
             ],
-            "rightItems": [
-                {
-                    "labelId": "gnhome.browseCategories",
-                    "type": "link",
-                    "href": "/categories/"
-                },
-                {
-                    "type": "divider"
-                }
-            ]
         },
         "footer": {
             "items": [],
