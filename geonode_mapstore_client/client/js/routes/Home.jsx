@@ -435,13 +435,13 @@ function Home({
                     defaultLabelId={filters?.order?.defaultLabelId}
                 />
             </ConnectedCardGrid>
-            <Footer
+            {/* <Footer
                 ref={footerNode}
                 footerItems={footer.items}
                 footerCopyright={footer.copyright}
                 footerRightItems={footer.rightItems}
                 style={theme?.footer?.style}
-            />
+            /> */}
         </div>
     );
 }
