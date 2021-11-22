@@ -404,6 +404,7 @@
                     "badge": "${documentsTotalCount}"
                 }
             ],
+            "rightItems": []
         },
         "footer": {
             "items": [],
