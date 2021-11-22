@@ -168,23 +168,23 @@
     "geoNodeConfiguration": {
         "theme": {
             "variant": "light",
-            "color": "#4bae53",
+            "color": "#324e5d",
             "body": {
-                "color": "#4bae53"
+                "color": "#324e5d"
             },
             "link": {
-                "color": "#4bae53",
-                "hoverColor": "#3c763d"
+                "color": "#324e5d",
+                "hoverColor": "#16aa9d"
             },
             "focus": {
-                "color": "#4bae53"
+                "color": "#324e5d"
             },
             "bodyShade": {
-                "color": "#4bae53"
+                "color": "#324e5d"
             },
             "tag": {
                 "hoverColor": "#000",
-                "hoverBg": "#4bae53",
+                "hoverBg": "#324e5d",
                 "activeColor": "#fffff",
                 "activeBg": "#000"
             },
@@ -193,7 +193,7 @@
             },
             "hero": {
                 "style": {
-                    "backgroundImage": "url(/static/mapstore/img/header-bg.jpg)",
+                    "backgroundImage": "url(/static/mapstore/img/header-bg.png)",
                     "backgroundSize": "cover",
                     "backgroundPosition": "center",
                     "backgroundRepeat": "no-repeat"
@@ -208,11 +208,11 @@
                 "inline": true
             },
             "footer": {
-                "bg": "#222831",
-                "color": "#ffffff",
+                "bg": "#e8f8fb",
+                "color": "#004d5c",
                 "link": {
-                    "color": "#ffffff",
-                    "hoverColor": "#dddddd"
+                    "color": "#004d5c",
+                    "hoverColor": "#06332f"
                 }
             }
         },
