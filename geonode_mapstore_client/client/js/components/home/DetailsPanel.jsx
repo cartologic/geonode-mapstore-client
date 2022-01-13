@@ -63,6 +63,7 @@ function ThumbnailPreview({
 function DetailsPanel({
     resource,
     // filters,
+    isLoggedIn,
     formatHref,
     sectionStyle,
     loading,
@@ -101,6 +102,13 @@ function DetailsPanel({
         name
     } = resource && (types[resource.doc_type] || types[resource.resource_type]) || {};
     const embedUrl = resource?.embed_url && formatEmbedUrl(resource.embed_url);
+
+    const downloadTooltip = (props) => (
+        <Tooltip id="button-tooltip" {...props}>
+            Download is free, but please register/sign-in first.
+        </Tooltip>
+    );
+
     return (
         <div
             ref={detailsContainerNode}
@@ -179,15 +187,31 @@ function DetailsPanel({
                 <div className="gn-details-panel-content">
                     <div className="gn-details-panel-tools">
                         {
-                            resource?.detail_url && 
-                            <Button
-                                variant="default"
-                                href={resource.detail_url}
-                                className="resource-btn"
-                            >
-                                <FaIcon name="download" />
-                                <Message msgId="gnhome.download" />
-                            </Button>
+                            resource?.detail_url && isLoggedIn ? (
+                                <Button
+                                    variant="default"
+                                    href={resource.detail_url}
+                                    className="resource-btn"
+                                >
+                                    <FaIcon name="download" />
+                                    <Message msgId="gnhome.download" />
+                                </Button>
+                            ) : (
+                                <OverlayTrigger 
+                                    placement="top" 
+                                    delay={{ show: 250, hide: 400 }} 
+                                    overlay={downloadTooltip}
+                                >
+                                    <Button
+                                        variant="default"
+                                        href={resource.detail_url}
+                                        className="resource-btn"
+                                    >
+                                        <FaIcon name="download" />
+                                        <Message msgId="gnhome.download" />
+                                    </Button>
+                                </OverlayTrigger>
+                            )
                         }
                         {
                             resource?.detail_url && 

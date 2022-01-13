@@ -395,6 +395,7 @@ function Home({
                 column={
                     <ConnectedDetailsPanel
                         resource={resource}
+                        isLoggedIn={!!user}
                         filters={queryFilters}
                         formatHref={handleFormatHref}
                         sectionStyle={{
