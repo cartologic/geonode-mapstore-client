@@ -1,6 +1,6 @@
 {
     "proxyUrl": {
-        "url": "proxy/?url=",
+        "url": "?url=",
         "useCORS": []
     },
     "useAuthenticationRules": true,
@@ -305,6 +305,12 @@
                 }
             ],
             "items": [
+                {
+                    "labelId": "gnhome.register",
+                    "type": "link",
+                    "href": "/account/signup/?next=/",
+                    "authenticated": false
+                },
                 {
                     "labelId": "gnhome.signIn",
                     "type": "link",
