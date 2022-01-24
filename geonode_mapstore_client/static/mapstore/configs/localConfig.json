@@ -1,6 +1,6 @@
 {
     "proxyUrl": {
-        "url": "?url=",
+        "url": "proxy/?url=",
         "useCORS": []
     },
     "useAuthenticationRules": true,
