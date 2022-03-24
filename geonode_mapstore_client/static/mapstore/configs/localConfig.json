@@ -306,12 +306,6 @@
             ],
             "items": [
                 {
-                    "labelId": "gnhome.register",
-                    "type": "link",
-                    "href": "/account/signup/?next=/",
-                    "authenticated": false
-                },
-                {
                     "labelId": "gnhome.signIn",
                     "type": "link",
                     "href": "/account/login/?next=/",
@@ -387,9 +381,9 @@
         "menu": {
             "items": [
                 {
-                    "labelId": "gnhome.featuredApps",
+                    "labelId": "gnhome.maps",
                     "type": "link",
-                    "href": "/featured-apps/"
+                    "href": "https://terria.mapsaudi.com/"
                 },
                 {
                     "labelId": "gnhome.layers",
@@ -398,16 +392,9 @@
                     "badge": "${layersTotalCount}"
                 },
                 {
-                    "labelId": "gnhome.maps",
+                    "labelId": "gnhome.featuredApps",
                     "type": "link",
-                    "href": "/proxy/#/?filter{resource_type.in}=map",
-                    "badge": "${mapsTotalCount}"
-                },
-                {
-                    "labelId": "gnhome.documents",
-                    "type": "link",
-                    "href": "/proxy/#/?filter{resource_type.in}=document",
-                    "badge": "${documentsTotalCount}"
+                    "href": "/featured-apps/"
                 }
             ],
             "rightItems": []
