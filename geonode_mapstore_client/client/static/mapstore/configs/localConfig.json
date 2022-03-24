@@ -381,9 +381,9 @@
         "menu": {
             "items": [
                 {
-                    "labelId": "gnhome.featuredApps",
+                    "labelId": "gnhome.maps",
                     "type": "link",
-                    "href": "/featured-apps/"
+                    "href": "https://terria.mapsaudi.com/"
                 },
                 {
                     "labelId": "gnhome.layers",
@@ -392,16 +392,9 @@
                     "badge": "${layersTotalCount}"
                 },
                 {
-                    "labelId": "gnhome.maps",
+                    "labelId": "gnhome.featuredApps",
                     "type": "link",
-                    "href": "/proxy/#/?filter{resource_type.in}=map",
-                    "badge": "${mapsTotalCount}"
-                },
-                {
-                    "labelId": "gnhome.documents",
-                    "type": "link",
-                    "href": "/proxy/#/?filter{resource_type.in}=document",
-                    "badge": "${documentsTotalCount}"
+                    "href": "/featured-apps/"
                 }
             ],
             "rightItems": []
