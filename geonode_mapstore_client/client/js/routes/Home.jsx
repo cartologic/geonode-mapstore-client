@@ -364,7 +364,7 @@ function Home({
                     {isHeroVisible && search}
                 </div>
             </Hero>}
-            <MenuIndex
+            {/* <MenuIndex
                 ref={menuIndexNode}
                 style={{
                     top: dimensions.brandNavbarHeight,
@@ -379,7 +379,7 @@ function Home({
                     inline={theme?.languageSelector?.inline}
                     style={theme?.languageSelector?.style}
                 />}
-            />
+            /> */}
             <ConnectedCardGrid
                 user={user}
                 query={query}

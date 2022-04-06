@@ -101,6 +101,12 @@ const BrandNavbar = forwardRef(({
                         );
                     })}
                 </ul>
+                <div className="gn-navbar-items">
+                    <a href="https://terria.mapsaudi.com/">Maps</a>
+                    <a href="/featured-apps/">Apps</a>
+                    <a href="/premium-content/">Premium Content</a>
+                    <a href="/commercial-services/">Services</a>
+                </div>
                 {inline && <div
                     className="gn-brand-navbar-center"
                     ref={centerNode}

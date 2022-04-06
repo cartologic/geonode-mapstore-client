@@ -64,4 +64,12 @@
             margin-right: 0.5rem;
         }
     }
+    .gn-navbar-items {
+        display: flex;
+        justify-content: start;
+    }
+
+    .gn-navbar-items a {
+        margin: 0 10px;
+    }
 }
