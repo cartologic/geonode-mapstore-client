@@ -6,13 +6,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { createSelector } from 'reselect';
 import url from 'url';
 import isArray from 'lodash/isArray';
-import { createSelector } from 'reselect';
-import BorderLayout from '@mapstore/framework/components/layout/BorderLayout';
 import { getMonitoredState } from '@mapstore/framework/utils/PluginsUtils';
 import { getConfigProp } from '@mapstore/framework/utils/ConfigUtils';
 import PluginsContainer from '@mapstore/framework/components/plugins/PluginsContainer';
@@ -20,16 +19,39 @@ import useLazyPlugins from '@js/hooks/useLazyPlugins';
 import { requestResourceConfig, requestNewResourceConfig } from '@js/actions/gnresource';
 import MetaTags from '@js/components/MetaTags';
 import MainErrorView from '@js/components/MainErrorView';
+import ViewerLayout from '@js/components/ViewerLayout';
+import { createShallowSelector } from '@mapstore/framework/utils/ReselectUtils';
 
 const urlQuery = url.parse(window.location.href, true).query;
 
-const ConnectedPluginsContainer = connect((state) => ({
-    mode: urlQuery.mode || (urlQuery.mobile || state.browser && state.browser.mobile ? 'mobile' : 'desktop'),
-    monitoredState: getMonitoredState(state, getConfigProp('monitorState')),
-    pluginsState: {
-        ...state.controls
+const ConnectedPluginsContainer = connect(
+    createShallowSelector(
+        state => urlQuery.mode || (urlQuery.mobile || state.browser && state.browser.mobile ? 'mobile' : 'desktop'),
+        state => getMonitoredState(state, getConfigProp('monitorState')),
+        state => state?.controls,
+        (mode, monitoredState, controls) => ({
+            mode,
+            monitoredState,
+            pluginsState: controls
+        })
+    )
+)(PluginsContainer);
+
+const DEFAULT_PLUGINS_CONFIG = [];
+
+function getPluginsConfiguration(name, pluginsConfig) {
+    if (!pluginsConfig) {
+        return DEFAULT_PLUGINS_CONFIG;
     }
-}))(PluginsContainer);
+    if (isArray(pluginsConfig)) {
+        return pluginsConfig;
+    }
+    const { isMobile } = getConfigProp('geoNodeSettings') || {};
+    if (isMobile && pluginsConfig) {
+        return pluginsConfig[`${name}_mobile`] || pluginsConfig[name] || DEFAULT_PLUGINS_CONFIG;
+    }
+    return pluginsConfig[name] || DEFAULT_PLUGINS_CONFIG;
+}
 
 function ViewerRoute({
     name,
@@ -49,17 +71,14 @@ function ViewerRoute({
 }) {
 
     const { pk } = match.params || {};
-    const pluginsConfig = isArray(propPluginsConfig)
-        ? propPluginsConfig
-        : propPluginsConfig && propPluginsConfig[name] || [];
+    const pluginsConfig = getPluginsConfiguration(name, propPluginsConfig);
 
-    const [loading, setLoading] = useState(true);
-    const { plugins: loadedPlugins } = useLazyPlugins({
+    const { plugins: loadedPlugins, pending } = useLazyPlugins({
         pluginsEntries: lazyPlugins,
         pluginsConfig
     });
     useEffect(() => {
-        if (!loading && pk !== undefined) {
+        if (!pending && pk !== undefined) {
             if (pk === 'new') {
                 onCreate(resourceType);
             } else {
@@ -68,30 +87,58 @@ function ViewerRoute({
                 });
             }
         }
-    }, [loading, pk]);
+    }, [pending, pk]);
 
+    const loading = loadingConfig || pending;
+    const parsedPlugins = useMemo(() => ({ ...loadedPlugins, ...plugins }), [loadedPlugins]);
     const Loader = loaderComponent;
+    const className = `page-${resourceType}-viewer`;
+
+    useEffect(() => {
+        // set the correct height of navbar
+        const mainHeader = document.querySelector('.gn-main-header');
+        const mainHeaderPlaceholder = document.querySelector('.gn-main-header-placeholder');
+        const topbar = document.querySelector('#gn-topbar');
+        function resize() {
+            if (mainHeaderPlaceholder && mainHeader) {
+                mainHeaderPlaceholder.style.height = mainHeader.clientHeight + 'px';
+            }
+            if (topbar && mainHeader) {
+                topbar.style.top = mainHeader.clientHeight + 'px';
+            }
+        }
+        // hide the naviagtion bar is a recource is being viewed
+        if (!loading) {
+            document.getElementById('gn-topbar')?.classList.add('hide-navigation');
+            document.getElementById('gn-brand-navbar-bottom')?.classList.add('hide-search-bar');
+            resize();
+        }
+        return () => {
+            document.getElementById('gn-topbar')?.classList.remove('hide-navigation');
+            document.getElementById('gn-brand-navbar-bottom')?.classList.remove('hide-search-bar');
+            resize();
+        };
+    }, [loading]);
 
     return (
         <>
-            {resource &&  <MetaTags
+            {resource && <MetaTags
                 logo={resource.thumbnail_url}
                 title={(resource?.title) ? `${resource?.title} - ${siteName}` : siteName }
                 siteName={siteName}
                 contentURL={resource?.detail_url}
                 content={resource?.abstract}
             />}
-            <ConnectedPluginsContainer
-                key={`page-${resourceType}-viewer`}
-                id={`page-${resourceType}-viewer`}
-                className={`page page-${resourceType}-viewer`}
-                component={BorderLayout}
+            {!loading && <ConnectedPluginsContainer
+                key={className}
+                id={className}
+                className={className}
+                component={ViewerLayout}
                 pluginsConfig={pluginsConfig}
-                plugins={{ ...loadedPlugins, ...plugins }}
+                plugins={parsedPlugins}
                 params={params}
-                onPluginsLoaded={() => setLoading(false)}
-            />
-            {( loading || loadingConfig ) && Loader && <Loader />}
+            />}
+            {loading && Loader && <Loader />}
             {configError && <MainErrorView msgId={configError}/>}
         </>
     );

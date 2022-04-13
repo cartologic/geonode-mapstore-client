@@ -26,7 +26,16 @@ const itemElement = ({ labelId, href, badge, target }) =>  (
         </NavLink>
     </>);
 
-const itemsList = (items) => ( items && items.map(({ labelId, href, badge, target }) => itemElement({ labelId, href, badge, target })));
+const itemsList = (items) => (items && items.map((item) => {
+
+    const { labelId, href, badge, target, type, Component, className } = item;
+
+    if (type === 'plugin' && Component) {
+        return (<li><Component variant="default" className={className} showMessage /></li>);
+    }
+
+    return itemElement({ labelId, href, badge, target });
+} ));
 
 /**
  * DropdownList component
@@ -77,14 +86,15 @@ const DropdownList = ({
     containerNode,
     size,
     alignRight,
-    variant
+    variant,
+    responsive
 }) => {
 
     const dropdownItems = items
         .map((itm, idx) => {
 
             if (itm.type === 'plugin' && itm.Component) {
-                return (<li><itm.Component variant="default" className={itm.className}/></li>);
+                return (<li><itm.Component variant="default" className={itm.className} showMessage /></li>);
             }
             if (itm.type === 'divider') {
                 return <Dropdown.Divider key={idx} />;
@@ -127,7 +137,17 @@ const DropdownList = ({
                 toogleIcon ? <FaIcon name={toogleIcon} />
                     : undefined
             }
-            {labelId && <Message msgId={labelId} /> || label}
+            {
+                (labelId && !responsive) &&
+                <Message msgId={labelId} /> || label
+            }
+            {
+                (labelId && responsive) &&
+                <div className="gn-content-responsive">
+                    <span><Message msgId={labelId} /></span>
+                    <span><FaIcon name="plus" /></span>
+                </div>
+            }
             {isValidBadgeValue(badgeValue) && <Badge>{badgeValue}</Badge>}
         </Dropdown.Toggle>
 

@@ -8,9 +8,7 @@
 
 import axios from '@mapstore/framework/libs/ajax';
 import {
-    parseDevHostname,
-    setRequestOptions,
-    getRequestOptions
+    parseDevHostname
 } from '@js/utils/APIUtils';
 import merge from 'lodash/merge';
 import mergeWith from 'lodash/mergeWith';
@@ -21,7 +19,14 @@ import castArray from 'lodash/castArray';
 import get from 'lodash/get';
 import { getUserInfo } from '@js/api/geonode/user';
 import { setFilterById } from '@js/utils/SearchUtils';
-import { ResourceTypes } from '@js/utils/ResourceUtils';
+import { ResourceTypes, availableResourceTypes, setAvailableResourceTypes } from '@js/utils/ResourceUtils';
+import { getConfigProp } from '@mapstore/framework/utils/ConfigUtils';
+import { mergeConfigsPatch } from '@mapstore/patcher';
+
+/**
+ * Actions for GeoNode save workflow
+ * @module api/geonode/v2
+ */
 
 let endpoints = {
     // default values
@@ -36,7 +41,8 @@ let endpoints = {
     'owners': '/api/v2/owners',
     'keywords': '/api/v2/keywords',
     'regions': '/api/v2/regions',
-    'groups': '/api/v2/groups'
+    'groups': '/api/v2/groups',
+    'uploads': '/api/v2/uploads'
 };
 
 const RESOURCES = 'resources';
@@ -51,28 +57,11 @@ const REGIONS = 'regions';
 const CATEGORIES = 'categories';
 const KEYWORDS = 'keywords';
 const GROUPS = 'groups';
-
+const UPLOADS = 'uploads';
 
 function addCountToLabel(name, count) {
     return `${name} (${count || 0})`;
 }
-
-const requestOptions = (name, requestFunc) => {
-    const options = getRequestOptions(name);
-    if (!options) {
-        return axios.options(parseDevHostname(endpoints[name]))
-            .then(({ data }) => {
-                setRequestOptions(name, data);
-                return requestFunc(data);
-            })
-            .catch(() => {
-                const error = { error: true };
-                setRequestOptions(name, error);
-                return requestFunc(error);
-            });
-    }
-    return requestFunc(options);
-};
 
 // some fields such as search_fields does not support the array notation `key[]=value1&key[]=value2`
 // this function will parse all values included array in the `key=value1&key=value2` format
@@ -98,6 +87,9 @@ export const setEndpoints = (data) => {
     endpoints = { ...endpoints, ...data };
 };
 
+/**
+ * get all thw endpoints available from API V2
+ */
 export const getEndpoints = () => {
     return axios.get('/api/v2/')
         .then(({ data }) => {
@@ -145,7 +137,7 @@ export const getResources = ({
         .filter(({ id }) => castArray(f || []).indexOf(id) !== -1)
         .reduce((acc, filter) => mergeCustomQuery(acc, filter.query || {}), {}) || {};
 
-    return requestOptions(RESOURCES, () => axios.get(parseDevHostname(
+    return axios.get(parseDevHostname(
         addQueryString(endpoints[RESOURCES], q && {
             search: q,
             search_fields: ['title', 'abstract']
@@ -156,7 +148,8 @@ export const getResources = ({
             ...(sort && { sort: isArray(sort) ? sort : [ sort ]}),
             page,
             page_size: pageSize,
-            'filter{metadata_only}': false // exclude resources such as services
+            'filter{metadata_only}': false, // exclude resources such as services
+            include: ['executions']
         }
     })
         .then(({ data }) => {
@@ -168,7 +161,7 @@ export const getResources = ({
                         return resource;
                     })
             };
-        }));
+        });
 };
 
 export const getMaps = ({
@@ -178,7 +171,7 @@ export const getMaps = ({
     sort,
     ...params
 }) => {
-    return requestOptions(MAPS, () => axios
+    return axios
         .get(
             parseDevHostname(
                 addQueryString(endpoints[MAPS], q && {
@@ -203,7 +196,42 @@ export const getMaps = ({
                         return resource;
                     })
             };
-        }));
+        });
+};
+
+export const getDatasets = ({
+    q,
+    pageSize = 20,
+    page = 1,
+    sort,
+    ...params
+}) => {
+    return axios
+        .get(
+            parseDevHostname(
+                addQueryString(endpoints[DATASETS], q && {
+                    search: q,
+                    search_fields: ['title', 'abstract']
+                })
+            ), {
+                // axios will format query params array to `key[]=value1&key[]=value2`
+                params: {
+                    ...params,
+                    ...(sort && { sort: isArray(sort) ? sort : [ sort ]}),
+                    page,
+                    page_size: pageSize
+                }
+            })
+        .then(({ data }) => {
+            return {
+                totalCount: data.total,
+                isNextPageAvailable: !!data.links.next,
+                resources: (data.datasets || [])
+                    .map((resource) => {
+                        return resource;
+                    })
+            };
+        });
 };
 
 export const getDocumentsByDocType = (docType = 'image', {
@@ -214,7 +242,7 @@ export const getDocumentsByDocType = (docType = 'image', {
     ...params
 }) => {
 
-    return requestOptions(MAPS, () => axios
+    return axios
         .get(
             parseDevHostname(
                 addQueryString(endpoints[DOCUMENTS], q && {
@@ -240,9 +268,18 @@ export const getDocumentsByDocType = (docType = 'image', {
                         return resource;
                     })
             };
-        }));
+        });
 };
 
+export const setMapThumbnail = (pk, body) => {
+    return axios.post(parseDevHostname(`${endpoints[RESOURCES]}/${pk}/set_thumbnail_from_bbox`), body)
+        .then(({ data }) => (data));
+};
+
+export const setResourceThumbnail = (pk, body) => {
+    return axios.put(parseDevHostname(`${endpoints[RESOURCES]}/${pk}/set_thumbnail`), body)
+        .then(({ data }) => data);
+};
 
 export const setFavoriteResource = (pk, favorite) => {
     const request = favorite ? axios.post : axios.delete;
@@ -251,7 +288,11 @@ export const setFavoriteResource = (pk, favorite) => {
 };
 
 export const getResourceByPk = (pk) => {
-    return axios.get(parseDevHostname(`${endpoints[RESOURCES]}/${pk}`))
+    return axios.get(parseDevHostname(`${endpoints[RESOURCES]}/${pk}`), {
+        params: {
+            include: ['executions']
+        }
+    })
         .then(({ data }) => data.resource);
 };
 
@@ -396,15 +437,29 @@ export const getConfiguration = (configUrl = '/static/mapstore/configs/localConf
     return axios.get(configUrl)
         .then(({ data }) => {
             const geoNodePageConfig = window.__GEONODE_CONFIG__ || {};
-            const localConfig = mergeWith(
+            const geoNodePageLocalConfig = geoNodePageConfig.localConfig || {};
+            const pluginsConfigPatchRules = geoNodePageConfig.pluginsConfigPatchRules || [];
+
+            const mergedLocalConfig  = mergeWith(
                 data,
-                geoNodePageConfig.localConfig || {},
+                geoNodePageLocalConfig,
                 (objValue, srcValue) => {
                     if (isArray(objValue)) {
                         return [...objValue, ...srcValue];
                     }
                     return undefined; // eslint-disable-line consistent-return
                 });
+
+            // change plugins config based on patches provided in settings.py
+            const plugins = pluginsConfigPatchRules.length > 0
+                ? mergeConfigsPatch(mergedLocalConfig.plugins, pluginsConfigPatchRules)
+                : mergedLocalConfig.plugins;
+
+            const localConfig = {
+                ...mergedLocalConfig,
+                plugins
+            };
+
             if (geoNodePageConfig.overrideLocalConfig) {
                 return geoNodePageConfig.overrideLocalConfig(localConfig, {
                     mergeWith,
@@ -420,35 +475,13 @@ export const getConfiguration = (configUrl = '/static/mapstore/configs/localConf
         });
 };
 
-
-let availableResourceTypes;
-export const getResourceTypes = ({}, filterKey = 'resource-types') => {
+export const getResourceTypes = () => {
     if (availableResourceTypes) {
         return new Promise(resolve => resolve(availableResourceTypes));
     }
     return axios.get(parseDevHostname(endpoints[RESOURCE_TYPES]))
         .then(({ data }) => {
-            availableResourceTypes = (data?.resource_types || [])
-                .map((type) => {
-                    // replace the string with object
-                    // as soon the backend support object results
-                    // currently it's supporting only string response
-                    const selectOption = isObject(type)
-                        ? {
-                            value: type.name,
-                            label: `${type.name} (${type.count || 0})`
-                        }
-                        : {
-                            value: type,
-                            label: type
-                        };
-                    const resourceType = {
-                        value: selectOption.value,
-                        selectOption
-                    };
-                    setFilterById(filterKey + selectOption.value, resourceType);
-                    return resourceType;
-                });
+            setAvailableResourceTypes(data?.resource_types || []);
             return [...availableResourceTypes];
         });
 };
@@ -496,11 +529,7 @@ export const getResourcesTotalCount = () => {
 * @return {promise} it returns an object with the success map object response
 */
 export const createMap = (body = {}) => {
-    return axios.post(parseDevHostname(`${endpoints[MAPS]}`),
-        body,
-        {
-            timeout: 10000
-        })
+    return axios.post(parseDevHostname(`${endpoints[MAPS]}`), body)
         .then(({ data }) => data?.map);
 };
 
@@ -559,11 +588,11 @@ export const getCategories = ({ q, includes, page, pageSize, ...params }, filter
         }
     })
         .then(({ data }) => {
-            const results = (data?.TopicCategories || [])
+            const results = (data?.categories || [])
                 .map((result) => {
                     const selectOption = {
                         value: result.identifier,
-                        label: addCountToLabel(result.gn_description || result.gn_description_en, result.total)
+                        label: addCountToLabel(result.gn_description || result.gn_description_en, result.count)
                     };
                     const category = {
                         ...result,
@@ -591,11 +620,11 @@ export const getRegions = ({ q, includes, page, pageSize, ...params }, filterKey
         }
     })
         .then(({ data }) => {
-            const results = (data?.Regions || [])
+            const results = (data?.regions || [])
                 .map((result) => {
                     const selectOption = {
                         value: result.name,
-                        label: addCountToLabel(result.name, result.total)
+                        label: addCountToLabel(result.name, result.count)
                     };
                     const region = {
                         ...result,
@@ -623,11 +652,11 @@ export const getOwners = ({ q, includes, page, pageSize, ...params }, filterKey 
         }
     })
         .then(({ data }) => {
-            const results = (data?.users || [])
+            const results = (data?.owners || [])
                 .map((result) => {
                     const selectOption = {
                         value: result.username,
-                        label: addCountToLabel(result.username, result.total)
+                        label: addCountToLabel(result.username, result.count)
                     };
                     const owner = {
                         ...result,
@@ -655,11 +684,11 @@ export const getKeywords = ({ q, includes, page, pageSize, ...params }, filterKe
         }
     })
         .then(({ data }) => {
-            const results = (data?.HierarchicalKeywords || [])
+            const results = (data?.keywords || [])
                 .map((result) => {
                     const selectOption = {
                         value: result.slug,
-                        label: addCountToLabel(result.slug, result.total)
+                        label: addCountToLabel(result.slug, result.count)
                     };
                     const keyword = {
                         ...result,
@@ -700,6 +729,87 @@ export const copyResource = (resource) => {
         .then(({ data }) => data);
 };
 
+export const downloadResource = (resource) => {
+    const url = resource.download_url || resource.href;
+    return axios.get(url, {
+        responseType: 'blob',
+        headers: {
+            'Content_type': 'application/json'
+        }
+    })
+        .then(({ data, headers }) => ({output: data, headers}));
+};
+
+export const getPendingUploads = () => {
+    return axios.get(parseDevHostname(endpoints[UPLOADS]), {
+        params: {
+            'filter{-state}': 'PROCESSED',
+            'page': 1,
+            'page_size': 99999
+        }
+    })
+        .then(({ data }) => data?.uploads);
+};
+
+export const getProcessedUploadsById = (ids) => {
+    return axios.get(parseDevHostname(endpoints[UPLOADS]), {
+        params: {
+            'filter{state}': 'PROCESSED',
+            'page': 1,
+            'page_size': ids.length,
+            'filter{id.in}': ids
+        }
+    })
+        .then(({ data }) => data?.uploads);
+};
+
+export const getProcessedUploadsByImportId = (importIds) => {
+    return axios.get(parseDevHostname(endpoints[UPLOADS]), {
+        params: {
+            'filter{state}': 'PROCESSED',
+            'page': 1,
+            'page_size': importIds.length,
+            'filter{import_id.in}': importIds
+        }
+    })
+        .then(({ data }) => data?.uploads);
+};
+
+export const uploadDataset = ({
+    file,
+    auxiliaryFiles,
+    ext,
+    charset = 'UTF-8',
+    config
+}) => {
+    const formData = new FormData();
+    formData.append('base_file', file);
+    formData.append('charset', charset);
+    formData.append('store_spatial_files', true);
+    const { timeEnabled } = getConfigProp('geoNodeSettings') || {};
+    if (timeEnabled) {
+        formData.append('time', ['csv', 'shp'].includes(ext) ? true : false);
+    }
+    Object.keys(auxiliaryFiles)
+        .forEach((auxExt) => {
+            formData.append(auxExt + '_file', auxiliaryFiles[auxExt]);
+        });
+    return axios.post(`${parseDevHostname(endpoints[UPLOADS])}/upload`, formData, config)
+        .then(({ data }) => (data));
+};
+
+export const uploadDocument = ({
+    title,
+    file,
+    config
+}) => {
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('doc_file', file);
+    return axios.post(`/documents/upload?no__redirect=true`, formData, config)
+        .then(({ data }) => (data));
+};
+
 export default {
     getEndpoints,
     getResources,
@@ -729,5 +839,11 @@ export default {
     getCompactPermissionsByPk,
     updateCompactPermissionsByPk,
     deleteResource,
-    copyResource
+    copyResource,
+    downloadResource,
+    getDatasets,
+    getPendingUploads,
+    getProcessedUploadsById,
+    getProcessedUploadsByImportId,
+    uploadDocument
 };

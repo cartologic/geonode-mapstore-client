@@ -27,8 +27,36 @@ import isString from 'lodash/isString';
 
 import url from 'url';
 import axios from '@mapstore/framework/libs/ajax';
+import { addLocaleData } from 'react-intl';
 
+let epicsCache = {};
 let actionListeners = {};
+// Target url here to fix proxy issue
+let targetURL = '';
+const getTargetUrl = () => {
+    if (!__DEVTOOLS__) {
+        return '';
+    }
+    if (targetURL) {
+        return targetURL;
+    }
+    const geonodeUrl = getConfigProp('geoNodeSettings')?.geonodeUrl || '';
+    if (!geonodeUrl) {
+        return '';
+    }
+    const { host, protocol } = url.parse(geonodeUrl);
+    targetURL = `${protocol}//${host}`;
+    return targetURL;
+};
+
+export const storeEpicsCache = (epics) => {
+    Object.keys(epics).forEach((key) => {
+        epicsCache[key] = true;
+    });
+};
+
+export const getEpicCache = (name) => epicsCache[name];
+export const setEpicCache = (name) => { epicsCache[name] = true; };
 
 export function getVersion() {
     if (!__DEVTOOLS__) {
@@ -60,6 +88,13 @@ export function initializeApp() {
                     }
                 };
             }
+            const tUrl = getTargetUrl();
+            if (tUrl && config.url?.match(tUrl)?.[0]) {
+                return {
+                    ...config,
+                    url: config.url.replace(tUrl, '')
+                };
+            }
             return config;
         }
     );
@@ -82,6 +117,50 @@ export function getPluginsConfiguration(pluginsConfig, key) {
     return [];
 }
 
+function getLanguageKey(languageCode) {
+    const parts = languageCode.split('-');
+    return parts[0];
+}
+
+function parseLanguageCode(languageCode) {
+    const parts = languageCode.split('-');
+    if (parts.length === 1) {
+        return parts[0].toLowerCase();
+    }
+    return `${parts[0].toLowerCase()}-${parts[1].toUpperCase()}`;
+}
+
+function languagesToSupportedLocales(languages) {
+    if (!languages || languages.length === 0) {
+        return null;
+    }
+    return languages.reduce((acc, [code, description]) => ({
+        ...acc,
+        [getLanguageKey(code)]: {
+            code: parseLanguageCode(code),
+            description
+        }
+    }), {});
+}
+
+function setupLocale(locale) {
+    return import(`react-intl/locale-data/${locale}`)
+        .then((localeDataMod) => {
+            const localeData = localeDataMod.default;
+            addLocaleData([...localeData]);
+            if (!global.Intl) {
+                return import('intl')
+                    .then((intlMod) => {
+                        global.Intl = intlMod.default;
+                        return import(`intl/locale-data/jsonp/${locale}.js`).then(() => {
+                            return locale;
+                        });
+                    });
+            }
+            return locale;
+        });
+}
+
 export function setupConfiguration({
     localConfig,
     user,
@@ -96,23 +175,21 @@ export function setupConfiguration({
         ...config
     } = localConfig;
     const geoNodePageConfig = window.__GEONODE_CONFIG__ || {};
-    const perms = geoNodePageConfig.perms || [];
-    const canEdit = geoNodePageConfig.isNewResource || perms.indexOf('change_resourcebase') !== -1;
-    const canView = geoNodePageConfig.isNewResource || perms.indexOf('view_resourcebase') !== -1;
     Object.keys(config).forEach((key) => {
         setConfigProp(key, config[key]);
     });
-    setConfigProp('translationsPath', config.translationsPath
-        ? config.translationsPath
-        : ['/static/mapstore/gn-translations', '/static/mapstore/ms-translations']
+    setConfigProp('translationsPath', geoNodePageConfig.translationsPath
+        ? geoNodePageConfig.translationsPath
+        : config.translationsPath
+            ? config.translationsPath
+            : ['/static/mapstore/ms-translations', '/static/mapstore/gn-translations']
     );
-    const supportedLocales = defaultSupportedLocales || getSupportedLocales();
+    const supportedLocales = languagesToSupportedLocales(geoNodePageConfig.languages) || defaultSupportedLocales || getSupportedLocales();
     setSupportedLocales(supportedLocales);
-    const locale = supportedLocales[geoNodePageConfig.languageCode]?.code || 'en';
+    const locale = supportedLocales[getLanguageKey(geoNodePageConfig.languageCode)]?.code || 'en-US';
     setConfigProp('locale', locale);
     const geoNodeResourcesInfo = getConfigProp('geoNodeResourcesInfo') || {};
     setConfigProp('geoNodeResourcesInfo', { ...geoNodeResourcesInfo, ...resourcesTotalCount });
-    const userDetails = geoNodePageConfig.userDetails;
     const securityState = user?.info?.access_token
         ? {
             security: {
@@ -120,9 +197,7 @@ export function setupConfiguration({
                 token: user.info.access_token
             }
         }
-        : userDetails
-            ? { security: userDetails }
-            : undefined;
+        : undefined;
 
     // globlal window interface to interact with the django page
     const actionTrigger = generateActionTrigger(LOCATION_CHANGE);
@@ -148,32 +223,29 @@ export function setupConfiguration({
         window.onInitMapStoreAPI(window.MapStoreAPI, geoNodePageConfig);
     }
 
-    return {
-        query,
-        securityState,
-        geoNodeConfiguration: localConfig.geoNodeConfiguration,
-        geoNodePageConfig,
-        pluginsConfigKey: query.config || geoNodePageConfig.pluginsConfigKey,
-        mapType: geoNodePageConfig.mapType,
-        settings: localConfig.geoNodeSettings,
-        permissions: {
-            canEdit,
-            canView
-        },
-        onStoreInit: (store) => {
-            store.addActionListener((action) => {
-                const act = action.type === 'PERFORM_ACTION' && action.action || action; // Needed to works also in debug
-                (actionListeners[act.type] || [])
-                    .concat(actionListeners['*'] || [])
-                    .forEach((listener) => {
-                        listener.call(null, act);
-                    });
-            });
-        },
-        configEpics: {
-            gnMapStoreApiEpic: actionTrigger.epic
-        }
-    };
+    return setupLocale(getLanguageKey(geoNodePageConfig.languageCode))
+        .then(() => ({
+            query,
+            securityState,
+            geoNodeConfiguration: localConfig.geoNodeConfiguration,
+            geoNodePageConfig,
+            pluginsConfigKey: query.config || geoNodePageConfig.pluginsConfigKey,
+            mapType: geoNodePageConfig.mapType,
+            settings: localConfig.geoNodeSettings,
+            onStoreInit: (store) => {
+                store.addActionListener((action) => {
+                    const act = action.type === 'PERFORM_ACTION' && action.action || action; // Needed to works also in debug
+                    (actionListeners[act.type] || [])
+                        .concat(actionListeners['*'] || [])
+                        .forEach((listener) => {
+                            listener.call(null, act);
+                        });
+                });
+            },
+            configEpics: {
+                gnMapStoreApiEpic: actionTrigger.epic
+            }
+        }));
 }
 
 export function getThemeLayoutSize(width) {

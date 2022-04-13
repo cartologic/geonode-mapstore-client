@@ -17,13 +17,14 @@ import { getParsedGeoNodeConfiguration } from "@js/selectors/config";
 import { userSelector } from '@mapstore/framework/selectors/security';
 import { buildHrefByTemplate } from '@js/utils/MenuUtils';
 import { setControlProperty } from '@mapstore/framework/actions/controls';
+import { processingDownload } from '@js/selectors/resourceservice';
 import {
     searchResources,
     requestResource,
     loadFeaturedResources
 } from '@js/actions/gnsearch';
 
-import { setFavoriteResource } from '@js/actions/gnresource';
+import { downloadResource, setFavoriteResource } from '@js/actions/gnresource';
 import {
     hashLocationToHref,
     clearQueryParams,
@@ -35,23 +36,31 @@ import MetaTags from "@js/components/MetaTags";
 import {
     getThemeLayoutSize
 } from '@js/utils/AppUtils';
+import { resourceHasPermission } from '@js/utils/ResourceUtils';
 import { getTotalResources } from '@js/selectors/search';
 import ConnectedCardGrid from '@js/routes/catalogue/ConnectedCardGrid';
 import DeleteResource from '@js/plugins/DeleteResource';
+import Notifications from '@mapstore/framework/plugins/Notifications';
 import SaveAs from '@js/plugins/SaveAs';
 const { DeleteResourcePlugin } = DeleteResource;
 const { SaveAsPlugin } = SaveAs;
+const { NotificationsPlugin } = Notifications;
 
 const ConnectedDetailsPanel = connect(
     createSelector([
         state => state?.gnresource?.loading || false,
-        state => state?.gnresource?.data?.favorite || false
-    ], (loading, favorite) => ({
+        state => state?.gnresource?.data?.favorite || false,
+        processingDownload,
+        state => state?.gnresource?.data || null
+    ], (loading, favorite, downloading, resource) => ({
         loading,
-        favorite
+        favorite,
+        downloading,
+        canDownload: resourceHasPermission(resource, 'download_resourcebase')
     })),
     {
-        onFavorite: setFavoriteResource
+        onFavorite: setFavoriteResource,
+        onAction: downloadResource
     }
 )(DetailsPanel);
 function Detail({
@@ -66,7 +75,8 @@ function Detail({
     width,
     resource,
     totalResources,
-    siteName
+    siteName,
+    loading
 }) {
 
     const {
@@ -156,7 +166,10 @@ function Detail({
                             totalResources={totalResources}
                             totalFilters={queryFilters.length}
                             filtersActive={!!(queryFilters.length > 0)}
+                            loading={loading}
+
                         />
+
                     </ConnectedCardGrid>
                 </div>
                 {!!resource &&
@@ -172,7 +185,8 @@ function Detail({
                     pathname: '/search/'
                 }).replace('#', '')}
             />
-            <SaveAsPlugin closeOnSave labelId="gnviewer.clone"/>
+            <SaveAsPlugin closeOnSave labelId="gnviewer.clone" />
+            <NotificationsPlugin />
         </>
     );
 }
@@ -208,15 +222,17 @@ const ConnectedDetail = connect(
         state => state?.controls?.gnFiltersPanel?.enabled || null,
         getParsedGeoNodeConfiguration,
         getTotalResources,
-        state => state?.gnsettings?.siteName || "Geonode"
-    ], (params, user, resource, isFiltersPanelEnabled, config, totalResources, siteName) => ({
+        state => state?.gnsettings?.siteName || "Geonode",
+        state => state?.gnsearch?.loading || false
+    ], (params, user, resource, isFiltersPanelEnabled, config, totalResources, siteName, loading) => ({
         params,
         user,
         resource,
         isFiltersPanelEnabled,
         config,
         totalResources,
-        siteName
+        siteName,
+        loading
     })),
     {
         onSearch: searchResources,

@@ -11,9 +11,12 @@ import PropTypes from 'prop-types';
 import MenuItem from './MenuItem';
 
 /**
+* @module components/Menu
+*/
+
+/**
  * Menu component
  * @name Menu
- * @memberof components.Menu
  * @prop {array} items list of menu item
  * @prop {string} containerClass css class of list container
  * @prop {string} childrenClass css class of item in list
@@ -23,8 +26,6 @@ import MenuItem from './MenuItem';
  *  <Menu items={items} />
  *
  */
-
-
 const Menu = forwardRef(({
     items,
     containerClass,
@@ -33,7 +34,8 @@ const Menu = forwardRef(({
     formatHref,
     size,
     alignRight,
-    variant
+    variant,
+    resourceName
 }, ref) => {
 
     return (
@@ -43,7 +45,7 @@ const Menu = forwardRef(({
                     return (
                         <li key={idx}>
                             <MenuItem
-                                variant={variant}
+                                variant={item.variant || variant}
                                 item={{ ...item, id: item.id || idx }}
                                 size={size}
                                 alignRight={alignRight}
@@ -52,6 +54,7 @@ const Menu = forwardRef(({
                                     formatHref
                                 }}
                                 classItem={childrenClass}
+                                resourceName={resourceName}
                             />
                         </li>
                     );

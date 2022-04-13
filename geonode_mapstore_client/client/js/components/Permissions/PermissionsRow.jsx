@@ -41,7 +41,7 @@ function PermissionsRow({
             {!hideOptions && <div className="gn-share-permissions-options">
                 <Select
                     clearable={clearable}
-                    options={options.map(({ value, labelId }) => ({ value, label: <Message msgId={labelId} /> }))}
+                    options={options.map(({ value, labelId, label }) => ({ value, label: label ? <span>{label}</span> : <Message msgId={labelId} />}))}
                     value={permissions}
                     onChange={(option) => onChange({ permissions: option?.value || '' })}
                 />
@@ -60,23 +60,23 @@ PermissionsRow.defaultProps = {
     options: [
         {
             value: 'view',
-            labelId: 'gnviewer.permissionView'
+            labelId: 'gnviewer.viewPermission'
         },
         {
             value: 'download',
-            labelId: 'gnviewer.permissionDownload'
+            labelId: 'gnviewer.downloadPermission'
         },
         {
             value: 'edit',
-            labelId: 'gnviewer.permissionEdit'
+            labelId: 'gnviewer.editPermission'
         },
         {
             value: 'manage',
-            labelId: 'gnviewer.permissionManage'
+            labelId: 'gnviewer.managePermission'
         }
     ],
     clearable: false,
-    onChange: () => {}
+    onChange: () => { }
 };
 
 export default PermissionsRow;

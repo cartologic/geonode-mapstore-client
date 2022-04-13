@@ -16,15 +16,20 @@ import {
     getGeoAppByPk,
     getDocumentByPk,
     getMapByPk,
-    getCompactPermissionsByPk
+    getCompactPermissionsByPk,
+    setResourceThumbnail
 } from '@js/api/geonode/v2';
 import { configureMap } from '@mapstore/framework/actions/config';
+import { mapSelector } from '@mapstore/framework/selectors/map';
+import { getSelectedLayer } from '@mapstore/framework/selectors/layers';
 import {
     browseData,
-    selectNode,
-    showSettings
+    selectNode
 } from '@mapstore/framework/actions/layers';
-import { toggleStyleEditor } from '@mapstore/framework/actions/styleeditor';
+import {
+    updateStatus,
+    initStyleService
+} from '@mapstore/framework/actions/styleeditor';
 import {
     setNewResource,
     setResourceType,
@@ -36,7 +41,8 @@ import {
     loadingResourceConfig,
     resourceConfigError,
     setResourceCompactPermissions,
-    updateResourceProperties
+    updateResourceProperties,
+    SET_RESOURCE_THUMBNAIL
 } from '@js/actions/gnresource';
 
 import {
@@ -56,21 +62,66 @@ import {
 } from '@mapstore/framework/actions/controls';
 import {
     resourceToLayerConfig,
-    ResourceTypes
+    ResourceTypes,
+    toMapStoreMapConfig,
+    parseStyleName
 } from '@js/utils/ResourceUtils';
-import { canAddResource } from '@js/selectors/resource';
+import {
+    canAddResource,
+    getResourceData,
+    getResourceThumbnail
+} from '@js/selectors/resource';
+import { updateAdditionalLayer } from '@mapstore/framework/actions/additionallayers';
+import { STYLE_OWNER_NAME } from '@mapstore/framework/utils/StyleEditorUtils';
+import { styleServiceSelector } from '@mapstore/framework/selectors/styleeditor';
+import { updateStyleService } from '@mapstore/framework/api/StyleEditor';
+import { resizeMap } from '@mapstore/framework/actions/map';
+import { saveError } from '@js/actions/gnsave';
+import {
+    error as errorNotification,
+    success as successNotification
+} from '@mapstore/framework/actions/notifications';
+import { getStyleProperties } from '@js/api/geonode/style';
 
 const resourceTypes = {
     [ResourceTypes.DATASET]: {
         resourceObservable: (pk, options) => {
-            const { page } = options || {};
-            return Observable.defer(() => axios.all([
-                getNewMapConfiguration(),
-                getDatasetByPk(pk)
-            ]))
+            const { page, selectedLayer, map: currentMap } = options || {};
+            return Observable.defer(() =>
+                axios.all([
+                    getNewMapConfiguration(),
+                    options?.isSamePreviousResource
+                        ? new Promise(resolve => resolve(options.resourceData))
+                        : getDatasetByPk(pk)
+                ])
+                    .then((response) => {
+                        const [mapConfig, gnLayer] = response;
+                        const newLayer = resourceToLayerConfig(gnLayer);
+
+                        if (!newLayer?.extendedParams?.defaultStyle || page !== 'dataset_edit_style_viewer') {
+                            return [mapConfig, gnLayer, newLayer];
+                        }
+
+                        return getStyleProperties({
+                            baseUrl: options?.styleService?.baseUrl,
+                            styleName: parseStyleName(newLayer.extendedParams.defaultStyle)
+                        }).then((updatedStyle) => {
+                            return [
+                                mapConfig,
+                                gnLayer,
+                                {
+                                    ...newLayer,
+                                    availableStyles: [{
+                                        ...updatedStyle,
+                                        ...newLayer.extendedParams.defaultStyle
+                                    }]
+                                }
+                            ];
+                        });
+                    })
+            )
                 .switchMap((response) => {
-                    const [mapConfig, gnLayer] = response;
-                    const newLayer = resourceToLayerConfig(gnLayer);
+                    const [mapConfig, gnLayer, newLayer] = response;
                     const {minx, miny, maxx, maxy } = newLayer?.bbox?.bounds || {};
                     const extent = newLayer?.bbox?.bounds && [minx, miny, maxx, maxy ];
                     return Observable.of(
@@ -78,16 +129,23 @@ const resourceTypes = {
                             ...mapConfig,
                             map: {
                                 ...mapConfig.map,
+                                ...currentMap, // keep configuration for other pages when resource id is the same (eg: center, zoom)
                                 layers: [
                                     ...mapConfig.map.layers,
-                                    { ...newLayer, isDataset: true }
+                                    {
+                                        ...selectedLayer, // keep configuration for other pages when resource id is the same (eg: filters)
+                                        ...newLayer,
+                                        isDataset: true,
+                                        _v_: Date.now()
+                                    }
                                 ]
                             }
                         }),
-                        ...(extent
+                        ...((extent && !currentMap)
                             ? [ setControlProperty('fitBounds', 'geometry', extent) ]
                             : []),
                         setControlProperty('toolbar', 'expanded', false),
+                        setControlProperty('rightOverlay', 'enabled', 'DetailViewer'),
                         selectNode(newLayer.id, 'layer', false),
                         setResource(gnLayer),
                         setResourceId(pk),
@@ -98,11 +156,10 @@ const resourceTypes = {
                             : []),
                         ...(page === 'dataset_edit_style_viewer'
                             ? [
-                                showSettings(newLayer.id, 'layers', {
-                                    opacity: newLayer.opacity || 1
-                                }),
-                                setControlProperty('layersettings', 'activeTab', 'style'),
-                                toggleStyleEditor(null, true)
+                                setControlProperty('visualStyleEditor', 'enabled', true),
+                                updateAdditionalLayer(newLayer.id, STYLE_OWNER_NAME, 'override', {}),
+                                updateStatus('edit'),
+                                resizeMap()
                             ]
                             : [])
                     );
@@ -111,20 +168,49 @@ const resourceTypes = {
     },
     [ResourceTypes.MAP]: {
         resourceObservable: (pk, options) =>
-            Observable.defer(() => getMapByPk(pk))
-                .switchMap((resource) => {
+            Observable.defer(() =>  axios.all([
+                getNewMapConfiguration(),
+                getMapByPk(pk)
+            ]))
+                .switchMap(([baseConfig, resource]) => {
+                    const mapConfig = options.data
+                        ? options.data
+                        : toMapStoreMapConfig(resource, baseConfig);
                     return Observable.of(
-                        configureMap(options.data || resource.data),
+                        configureMap(mapConfig),
                         setControlProperty('toolbar', 'expanded', false),
                         setResource(resource),
                         setResourceId(pk)
                     );
                 }),
         newResourceObservable: (options) =>
-            Observable.defer(() => getNewMapConfiguration())
-                .switchMap((response) => {
+            Observable.defer(() => axios.all([
+                getNewMapConfiguration(),
+                ...(options?.query?.['gn-dataset']
+                    ? [ getDatasetByPk(options.query['gn-dataset']) ]
+                    : [])
+            ]))
+                .switchMap(([ response, gnLayer ]) => {
+                    const mapConfig = options.data || response;
+                    const newLayer = gnLayer ? resourceToLayerConfig(gnLayer) : null;
+                    const { minx, miny, maxx, maxy } = newLayer?.bbox?.bounds || {};
+                    const extent = newLayer?.bbox?.bounds && [ minx, miny, maxx, maxy ];
                     return Observable.of(
-                        configureMap(options.data || response),
+                        configureMap(newLayer
+                            ? {
+                                ...mapConfig,
+                                map: {
+                                    ...mapConfig?.map,
+                                    layers: [
+                                        ...(mapConfig?.map?.layers || []),
+                                        newLayer
+                                    ]
+                                }
+                            }
+                            : mapConfig),
+                        ...(extent
+                            ? [ setControlProperty('fitBounds', 'geometry', extent) ]
+                            : []),
                         setControlProperty('toolbar', 'expanded', false)
                     );
                 })
@@ -160,6 +246,7 @@ const resourceTypes = {
             Observable.defer(() => getDocumentByPk(pk))
                 .switchMap((gnDocument) => {
                     return Observable.of(
+                        setControlProperty('rightOverlay', 'enabled', 'DetailViewer'),
                         setResource(gnDocument),
                         setResourceId(pk)
                     );
@@ -208,17 +295,19 @@ const resourceTypes = {
 };
 
 // collect all the reset action needed before changing a viewer
-const getResetActions = () => [
+const getResetActions = (isSameResource) => [
     resetControls(),
-    resetResourceState(),
-    setControlProperty('rightOverlay', 'enabled', false)
+    ...(!isSameResource ? [ resetResourceState() ] : []),
+    setControlProperty('rightOverlay', 'enabled', false),
+    setControlProperty('fitBounds', 'geometry', null)
 ];
 
 export const gnViewerRequestNewResourceConfig = (action$, store) =>
     action$.ofType(REQUEST_NEW_RESOURCE_CONFIG)
         .switchMap((action) => {
             const { newResourceObservable } = resourceTypes[action.resourceType] || {};
-            if (!canAddResource(store.getState())) {
+            const state = store.getState();
+            if (!canAddResource(state)) {
                 const formattedUrl = url.format({
                     ...window.location,
                     pathname: '/account/login/',
@@ -229,6 +318,8 @@ export const gnViewerRequestNewResourceConfig = (action$, store) =>
                 window.reload();
                 return Observable.empty();
             }
+
+            const { query = {} } = url.parse(state?.router?.location?.search, true) || {};
 
             if (!newResourceObservable) {
                 return Observable.of(
@@ -244,7 +335,7 @@ export const gnViewerRequestNewResourceConfig = (action$, store) =>
                     setNewResource(),
                     setResourceType(action.resourceType)
                 ),
-                newResourceObservable({}),
+                newResourceObservable({ query }),
                 Observable.of(
                     setControlProperty('pendingChanges', 'value', null),
                     loadingResourceConfig(false)
@@ -279,25 +370,44 @@ export const gnViewerRequestResourceConfig = (action$, store) =>
                     loadingResourceConfig(false)
                 );
             }
-
+            const styleService = styleServiceSelector(state);
+            const resourceData = getResourceData(state);
+            const isSamePreviousResource = !resourceData?.['@ms-detail'] && resourceData?.pk === action.pk;
             return Observable.concat(
                 Observable.of(
-                    ...getResetActions(),
+                    ...getResetActions(isSamePreviousResource),
                     loadingResourceConfig(true),
                     setResourceType(action.resourceType)
                 ),
-                Observable.defer(() => getCompactPermissionsByPk(action.pk))
-                    .switchMap((compactPermissions) => {
-                        return Observable.of(setResourceCompactPermissions(compactPermissions));
-                    })
-                    .catch(() => {
-                        return Observable.empty();
-                    }),
+                ...(!isSamePreviousResource
+                    ? [
+                        Observable.defer(() => getCompactPermissionsByPk(action.pk))
+                            .switchMap((compactPermissions) => {
+                                return Observable.of(setResourceCompactPermissions(compactPermissions));
+                            })
+                            .catch(() => {
+                                return Observable.empty();
+                            })
+                    ]
+                    : []),
+                ...(styleService?.baseUrl
+                    ? [Observable.defer(() => updateStyleService({
+                        styleService
+                    }))
+                        .switchMap((updatedStyleService) => {
+                            return Observable.of(initStyleService(updatedStyleService));
+                        })]
+                    : []),
                 resourceObservable(action.pk, {
                     ...action.options,
                     // set the pending changes as the new data fro maps, dashboards and geostories
                     // if undefined the returned data will be used
-                    data: pendingChanges?.data
+                    data: pendingChanges?.data,
+                    styleService: styleServiceSelector(state),
+                    isSamePreviousResource,
+                    resourceData,
+                    selectedLayer: isSamePreviousResource && getSelectedLayer(state),
+                    map: isSamePreviousResource && mapSelector(state)
                 }),
                 Observable.of(
                     ...(pendingChanges?.resource ? [updateResourceProperties(pendingChanges.resource)] : []),
@@ -313,7 +423,32 @@ export const gnViewerRequestResourceConfig = (action$, store) =>
                 });
         });
 
+export const gnViewerSetNewResourceThumbnail = (action$, store) =>
+    action$.ofType(SET_RESOURCE_THUMBNAIL)
+        .switchMap(() => {
+            const state = store.getState();
+            const newThumbnailData = getResourceThumbnail(state);
+            const resourceIDThumbnail = state?.gnresource?.id;
+            const currentResource = state.gnresource?.data || {};
+
+            const body = {
+                file: newThumbnailData
+            };
+
+            return Observable.defer(() => setResourceThumbnail(resourceIDThumbnail, body))
+                .switchMap((res) => {
+                    return Observable.of(updateResourceProperties({ ...currentResource, thumbnail_url: res.thumbnail_url, thumbnailChanged: false, updatingThumbnail: false }),
+                        successNotification({ title: "gnviewer.thumbnailsaved", message: "gnviewer.thumbnailsaved" }));
+                }).catch((error) => {
+                    return Observable.of(
+                        saveError(error.data || error.message),
+                        errorNotification({ title: "map.mapError.errorTitle", message: "map.mapError.errorDefault" })
+                    );
+                });
+        });
+
 export default {
     gnViewerRequestNewResourceConfig,
-    gnViewerRequestResourceConfig
+    gnViewerRequestResourceConfig,
+    gnViewerSetNewResourceThumbnail
 };

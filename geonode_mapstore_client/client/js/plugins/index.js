@@ -15,9 +15,13 @@ import {
     MeasureActionButton,
     LayerDownloadActionButton,
     AnnotationsActionButton,
-    FullScreenActionButton
+    FullScreenActionButton,
+    FilterLayerActionButton
 } from '@js/plugins/actionnavbar/buttons';
-import { getMetadataUrl } from '@js/utils/ResourceUtils';
+import { getMetadataUrl,
+    getMetadataDetailUrl,
+    resourceHasPermission,
+    canCopyResource } from '@js/utils/ResourceUtils';
 
 const EXCLUDED_EPICS_NAMES = [
     'loadGeostoryEpic',
@@ -136,13 +140,12 @@ export const plugins = {
                 ActionNavbar: {
                     name: 'Catalog',
                     Component: CatalogActionButton,
-                    priority: 1
-                },
-                ViewerLayout: {
-                    priority: 1
+                    priority: 1,
+                    doNotHide: true
                 },
                 TOC: {
-                    priority: 1
+                    priority: 1,
+                    doNotHide: true
                 }
             }
         }
@@ -173,7 +176,20 @@ export const plugins = {
     ),
     FilterLayerPlugin: toLazyPlugin(
         'FilterLayer',
-        () => import(/* webpackChunkName: 'plugins/filter-layer-plugin' */ '@mapstore/framework/plugins/FilterLayer')
+        () => import(/* webpackChunkName: 'plugins/filter-layer-plugin' */ '@mapstore/framework/plugins/FilterLayer'),
+        {
+            containers: {
+                ActionNavbar: {
+                    name: 'FilterLayer',
+                    Component: FilterLayerActionButton,
+                    priority: 1
+                },
+                TOC: {
+                    name: "FilterLayer",
+                    priority: 2
+                }
+            }
+        }
     ),
     MeasurePlugin: toLazyPlugin(
         'Measure',
@@ -306,6 +322,26 @@ export const plugins = {
             }
         }
     ),
+    PrintTextInputPlugin: toLazyPlugin(
+        'PrintTextInput',
+        () => import(/* webpackChunkName: 'plugins/print-text-input-plugin' */ '@mapstore/framework/plugins/print/TextInput')
+    ),
+    PrintOutputFormatPlugin: toLazyPlugin(
+        'PrintOutputFormat',
+        () => import(/* webpackChunkName: 'plugins/print-output-format-plugin' */ '@mapstore/framework/plugins/print/OutputFormat')
+    ),
+    PrintScalePlugin: toLazyPlugin(
+        'PrintScale',
+        () => import(/* webpackChunkName: 'plugins/print-scale-plugin' */ '@mapstore/framework/plugins/print/Scale')
+    ),
+    PrintProjectionPlugin: toLazyPlugin(
+        'PrintProjection',
+        () => import(/* webpackChunkName: 'plugins/print-projection-plugin' */ '@mapstore/framework/plugins/print/Projection')
+    ),
+    PrintGraticulePlugin: toLazyPlugin(
+        'PrintGraticule',
+        () => import(/* webpackChunkName: 'plugins/print-graticule-plugin' */ '@mapstore/framework/plugins/print/Graticule')
+    ),
     TimelinePlugin: toLazyPlugin(
         'Timeline',
         () => import(/* webpackChunkName: 'plugins/timeline-plugin' */ '@mapstore/framework/plugins/Timeline')
@@ -325,10 +361,6 @@ export const plugins = {
     DrawerMenuPlugin: toLazyPlugin(
         'DrawerMenu',
         () => import(/* webpackChunkName: 'plugins/drawer-menu-plugin' */ '@mapstore/framework/plugins/DrawerMenu')
-    ),
-    ViewerLayoutPlugin: toLazyPlugin(
-        'ViewerLayout',
-        () => import(/* webpackChunkName: 'plugins/viewer-layout-plugin' */ '@js/plugins/ViewerLayout')
     ),
     ActionNavbarPlugin: toLazyPlugin(
         'ActionNavbar',
@@ -359,13 +391,11 @@ export const plugins = {
         () => import(/* webpackChunkName: 'plugins/annotations-plugin' */ '@mapstore/framework/plugins/Annotations'),
         {
             containers: {
-                ViewerLayout: {
-                    priority: 2
-                },
                 ActionNavbar: {
                     name: 'Annotations',
                     Component: AnnotationsActionButton,
-                    priority: 2
+                    priority: 2,
+                    doNotHide: true
                 }
             }
         }
@@ -377,14 +407,36 @@ export const plugins = {
     DownloadResourcePlugin: toLazyPlugin(
         'DownloadResource',
         () => import(/* webpackChunkName: 'plugins/download-resource-plugin' */ '@js/plugins/DownloadResource')
+    ),
+    VisualStyleEditorPlugin: toLazyPlugin(
+        'VisualStyleEditor',
+        () => import(/* webpackChunkName: 'plugins/visual-style-editor-plugin' */ '@js/plugins/VisualStyleEditor')
+    ),
+    LegendPlugin: toLazyPlugin(
+        'Legend',
+        () => import(/* webpackChunkName: 'plugins/legend-plugin' */ '@js/plugins/Legend')
+    ),
+    DatasetsCatalogPlugin: toLazyPlugin(
+        'DatasetsCatalog',
+        () => import(/* webpackChunkName: 'plugins/dataset-catalog' */ '@js/plugins/DatasetsCatalog')
+    ),
+    LayerSettingsPlugin: toLazyPlugin(
+        'LayerSettings',
+        () => import(/* webpackChunkName: 'plugins/layer-settings' */ '@js/plugins/LayerSettings')
+    ),
+    SyncPlugin: toLazyPlugin(
+        'Sync',
+        () => import(/* webpackChunkName: 'plugins/sync-plugin' */ '@js/plugins/Sync')
     )
-
 };
 
 const pluginsDefinition = {
     plugins,
     requires: {
-        getMetadataUrl
+        getMetadataUrl,
+        getMetadataDetailUrl,
+        resourceHasPermission,
+        canCopyResource
     },
     epics: {},
     reducers: {}

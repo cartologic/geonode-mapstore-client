@@ -1,9 +1,28 @@
 {% load static %}
 {% load get_menu_json %}
+{% load catalogue_urls %}
 {% get_user_menu as USER_MENU %}
 
 {% block extra_style %}
 {% endblock %}
+
+<style>
+    #{{ id|default:'' }}-bottom {
+        display: none;
+        margin-bottom: 0;
+    }
+    @media (max-width: 748px) {
+        #{{ id|default:'' }} .gn-menu-content-center > * {
+            display: none;
+        }
+        #{{ id|default:'' }}-bottom {
+            display: flex;
+            width: calc(100% - 16px);
+            margin: 8px;
+        }
+    }
+</style>
+
 <nav id="{{ id|default:'' }}" class="gn-menu gn-menu-symmetric">
     <div class="gn-menu-container">
         <div class="gn-menu-content">
@@ -11,7 +30,7 @@
                 {% block left_menu %}
                 <ul class="gn-menu-list">
                     <li>
-                        <a href="{% block logo_href %}/{% endblock %}">
+                        <a href="{% block logo_href %}{% catalogue_home %}{% endblock %}">
                             {% if custom_theme.logo and custom_theme.logo.url %}
                                 <img src="{{ custom_theme.logo.url }}">
                             {% else %}
@@ -24,7 +43,7 @@
             </div>
             <div class="gn-menu-content-center">
                 {% block center_menu %}
-                    {% include './search_bar.html' %}
+                    {% include './search_bar.html' with search_bar_id='gn-search-bar' %}
                 {% endblock %}
             </div>
             <div class="gn-menu-content-right">
@@ -39,6 +58,11 @@
         </div>
     </div>
 </nav>
+<div id="{{ id|default:'' }}-bottom">
+    {% block bottom_menu %}
+        {% include './search_bar.html' with search_bar_id='gn-search-bar-bottom' %}
+    {% endblock %}
+</div>
 {% block extra_script %}
     <script type="text/javascript">
         (function() {

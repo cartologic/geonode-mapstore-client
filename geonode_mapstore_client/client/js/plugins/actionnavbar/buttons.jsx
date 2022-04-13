@@ -20,9 +20,10 @@ import Message from '@mapstore/framework/components/I18N/Message';
 import Button from '@js/components/Button';
 import FaIcon from '@js/components/FaIcon';
 import tooltip from '@mapstore/framework/components/misc/enhancers/tooltip';
-/**
- * buttons override to use in ActionNavbar for plugin imported from mapstore
- */
+import { openQueryBuilder } from '@mapstore/framework/actions/layerFilter';
+import { getSelectedLayer } from '@mapstore/framework/selectors/layers';
+
+// buttons override to use in ActionNavbar for plugin imported from mapstore
 
 export const PrintActionButton = connect(
     () => ({}),
@@ -89,7 +90,7 @@ export const FullScreenActionButton = connect(createSelector([
 ], (enabled) => ({
     enabled
 })), {
-    onClick: (enabled) => toggleFullscreen(enabled, "#ms-container")
+    onClick: (enabled) => toggleFullscreen(enabled)
 }
 )(({
     onClick,
@@ -125,7 +126,30 @@ export const LayerDownloadActionButton = connect(
             size={size}
             onClick={() => onClick()}
         >
-            <Message msgId="layerdownload.title" />
+            <Message msgId="gnviewer.export" />
+        </Button>
+    );
+});
+
+export const FilterLayerActionButton = connect(
+    (state) => ({
+        active: !!getSelectedLayer(state)?.layerFilter
+    }),
+    { onClick: openQueryBuilder }
+)(({
+    onClick,
+    variant,
+    size,
+    active
+}) => {
+    return (
+        <Button
+            variant={variant}
+            className={active ? 'gn-success-changes-icon' : ''}
+            size={size}
+            onClick={() => onClick()}
+        >
+            <Message msgId="gnhome.filter" />
         </Button>
     );
 });

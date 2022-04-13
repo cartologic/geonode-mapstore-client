@@ -13,16 +13,14 @@ import {
 } from '@js/actions/resourceservice';
 
 import {
-    PROCESS_RESOURCES
+    DOWNLOAD_RESOURCE,
+    PROCESS_RESOURCES,
+    DOWNLOAD_COMPLETE
 } from '@js/actions/gnresource';
 
-import {
-    getLocalStorageProcesses,
-    setLocalStorageProcesses
-} from '@js/utils/LocalStorageUtils';
-
 const defaultState = {
-    processes: getLocalStorageProcesses()
+    processes: [],
+    downloads: []
 };
 
 function resourceservice(state = defaultState, action) {
@@ -54,24 +52,33 @@ function resourceservice(state = defaultState, action) {
             ]
         };
     }
+    case STOP_ASYNC_PROCESS:
     case UPDATE_ASYNC_PROCESS: {
         return {
             ...state,
             processes: state.processes.map((process) =>
                 process?.resource?.pk === action?.payload?.resource?.pk
-                && process?.processType === action?.payload?.processType
+                        && process?.processType === action?.payload?.processType
                     ? action.payload
                     : process)
         };
     }
-    case STOP_ASYNC_PROCESS: {
+    case DOWNLOAD_RESOURCE: {
         return {
             ...state,
-            processes: state.processes.map((process) =>
-                process?.resource?.pk === action?.payload?.resource?.pk
-                && process?.processType === action?.payload?.processType
-                    ? action.payload
-                    : process)
+            downloads: [
+                ...state.downloads,
+                action.resource
+            ]
+        };
+    }
+    case DOWNLOAD_COMPLETE: {
+        return {
+            ...state,
+            downloads: [
+                ...state.downloads.filter((download) =>
+                    (download?.resource?.pk === action?.resource?.pk))
+            ]
         };
     }
     default:
@@ -79,4 +86,4 @@ function resourceservice(state = defaultState, action) {
     }
 }
 
-export default setLocalStorageProcesses(resourceservice);
+export default resourceservice;

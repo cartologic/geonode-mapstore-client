@@ -10,6 +10,7 @@ import { mapSelector } from '@mapstore/framework/selectors/map';
 import { mapSaveSelector } from '@mapstore/framework/selectors/mapsave';
 import { compareMapChanges } from '@mapstore/framework/utils/MapUtils';
 import { currentStorySelector } from '@mapstore/framework/selectors/geostory';
+import { originalDataSelector } from '@mapstore/framework/selectors/dashboard';
 import { widgetsConfig } from '@mapstore/framework/selectors/widgets';
 import { ResourceTypes } from '@js/utils/ResourceUtils';
 import {
@@ -22,6 +23,7 @@ import isObject from 'lodash/isObject';
 import isEqual from 'lodash/isEqual';
 import pick from 'lodash/pick';
 import isEmpty from 'lodash/isEmpty';
+import get from 'lodash/get';
 
 export const getResourceId = (state) => {
     const resourceId = state?.gnresource?.id;
@@ -34,7 +36,7 @@ export const getResourcePerms = (state) => {
 };
 
 export const getResourceName = (state) => {
-    return state?.gnresource?.data?.name || false;
+    return state?.gnresource?.data?.title || false;
 };
 
 export const getResourceDescription = (state) => {
@@ -43,6 +45,19 @@ export const getResourceDescription = (state) => {
 
 export const getResourceThumbnail = (state) => {
     return state?.gnresource?.data?.thumbnail_url || false;
+};
+
+export const updatingThumbnailResource = (state) => {
+    return state?.gnresource?.data?.updatingThumbnail || false;
+};
+
+export const isThumbnailChanged = (state) => {
+    return state?.gnresource?.data?.thumbnailChanged || false;
+};
+
+export const getViewedResourceType = (state) => {
+    const viewedResourceType = state?.gnresource?.type || false;
+    return viewedResourceType;
 };
 
 export const canEditResource = (state) => {
@@ -141,9 +156,9 @@ function isResourceDataEqual(state, initialData = {}, currentData = {}) {
     }
     switch (resourceType) {
     case ResourceTypes.MAP: {
-        return isMapCenterEqual(initialData?.map?.center, currentData?.map?.center) && compareMapChanges(
-            removeProperty(initialData, ['extraParams', 'getFeatureInfo', 'store', 'capability']),
-            removeProperty(currentData, ['extraParams', 'getFeatureInfo', 'store', 'capability'])
+        return compareMapChanges(
+            removeProperty(initialData, ['extraParams', 'getFeatureInfo', 'store', 'capability', 'extendedParams', 'availableStyles', 'center', 'zoom', 'bbox']),
+            removeProperty(currentData, ['extraParams', 'getFeatureInfo', 'store', 'capability', 'extendedParams', 'availableStyles', 'center', 'zoom', 'bbox'])
         );
     }
     case ResourceTypes.GEOSTORY: {
@@ -180,11 +195,13 @@ export const getResourceDirtyState = (state) => {
         return null;
     }
     const resourceType = state?.gnresource?.type;
-    const metadataKeys = ['title', 'abstract', 'thumbnail_url', 'data'];
+    const metadataKeys = ['title', 'abstract', 'data'];
     const { data: initialData = {}, ...resource } = pick(state?.gnresource?.initialResource || {}, metadataKeys);
     const { compactPermissions, geoLimits } = getPermissionsPayload(state);
     const currentData = JSON.parse(JSON.stringify(getDataPayload(state) || {})); // JSON stringify is needed to remove undefined values
-    const newMetadata = state?.gnresource?.data || {};
+    // omitting data on thumbnail
+    const thumbnailData = ['thumbnail_url', 'thumbnailChanged', 'updatingThumbnail'];
+    const newMetadata = omit(state?.gnresource?.data, thumbnailData) || {};
     const newResource = pick(newMetadata, metadataKeys);
     const isDataChanged = !isResourceDataEqual(state, initialData, currentData);
     const isMetadataChanged = !!(!isEmpty(newResource) && !isEmpty(resource) && !isEqual(newResource, resource));
@@ -200,3 +217,12 @@ export const getResourceDirtyState = (state) => {
         }
         : null;
 };
+
+/**
+ * Get geonode resources from within a Geostory
+ * @param {Object} state App state
+ * @returns {Array} Array of geonode resources
+ */
+export const getGeonodeResourceDataFromGeostory = (state) => get(currentStorySelector(state), 'resources', []).filter(res => res?.data?.sourceId === 'geonode');
+
+export const getGeonodeResourceFromDashboard = (state) => get(originalDataSelector(state), 'widgets', []).filter(widget => !!(widget.widgetType === 'map' && widget.map?.hasOwnProperty('extraParams')));

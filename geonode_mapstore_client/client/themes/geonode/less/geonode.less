@@ -4,11 +4,14 @@
 @import '_base.less';
 
 @import '_card-grid.less';
+@import '_datasets-catalog.less';
 @import '_details-panel.less';
 @import '_filter-by-extent.less';
 @import '_filter-form.less';
 @import '_footer.less';
 @import '_hero.less';
+@import '_layer-settings.less';
+@import '_legend.less';
 @import '_loader.less';
 @import '_main-event.less';
 @import '_menu.less';
@@ -18,6 +21,8 @@
 @import '_spinner.less';
 @import '_home-container.less';
 @import '_sub-flat-menu.less';
+@import '_upload.less';
+@import '_visual-style-editor.less';
 
 @import '_mixins.less';
 @import '_bootstrap-variables.less';
@@ -35,15 +40,3 @@
 .write-ms-theme(@gn-theme-vars);
 #gn-base-components-theme(@gn-theme-vars);
 #gn-components-theme(@gn-theme-vars);
-
-// ****************
-// default theme
-// ****************
-.gn-theme-light {
-    .extract-css-variables(@gn-theme-vars);
-}
-
-// ****************
-// theme variants
-// ****************
-@import 'variants/dark.less';

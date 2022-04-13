@@ -37,29 +37,12 @@ import { processResources } from '@js/actions/gnresource';
 import { getCurrentResourceCopyLoading } from '@js/selectors/resourceservice';
 
 /**
+* @module plugins/SaveAs
+*/
+
+/**
  * Plugin for SaveAs modal
  * @name SaveAs
- * @class
- * @memberof plugins
- * @prop {object} cfg.thumbnailOptions the thumbnail is scaled based on the following configuration
- * @prop {number} cfg.thumbnailOptions.width final width of thumbnail
- * @prop {number} cfg.thumbnailOptions.height final height of thumbnail
- * @prop {string} cfg.thumbnailOptions.type type format of thumbnail 'image/jpeg' or 'image/png'
- * @prop {number} cfg.thumbnailOptions.quality image quality if type is 'image/jpeg', value between 0 and 1
- * @prop {bool} cfg.thumbnailOptions.contain if contain is true the thumbnail is contained in the width and height provided, if contain is false the image will cover the provided width and height
- * @example
- * {
- *   "name": "SaveAs",
- *   "cfg": {
- *     "thumbnailOptions": {
- *       "width": 300,
- *       "height": 250,
- *       "type": "image/jpeg",
- *       "quality": 0.9,
- *       "contain": false
- *     }
- *   }
- * }
  */
 function SaveAs({
     resources,
@@ -73,8 +56,8 @@ function SaveAs({
     return (
         <SaveModal
             {...props}
-            hideThumbnail={!isNew}
             hideDescription={!isNew}
+            copy={!isNew}
             // add key to reset the component when a new resource is returned
             key={props?.resource?.pk || 'new'}
             labelId={labelId || 'save'}
@@ -156,8 +139,9 @@ const ConnectedSaveAsButton = connect(
         canAddResource,
         getResourceData,
         getResourceDirtyState,
-        (loggedIn, userCanAddResource, resource, dirtyState) => ({
-            enabled: loggedIn && userCanAddResource,
+        isNewResource,
+        (loggedIn, userCanAddResource, resource, dirtyState, isResourceNew) => ({
+            enabled: loggedIn && userCanAddResource && (resource?.is_copyable || isResourceNew),
             resource,
             disabled: !!dirtyState
         })

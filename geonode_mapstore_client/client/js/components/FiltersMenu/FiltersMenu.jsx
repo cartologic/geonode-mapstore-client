@@ -11,9 +11,13 @@ import Dropdown from '@js/components/Dropdown';
 import Button from '@js/components/Button';
 import Badge from '@js/components/Badge';
 import Message from '@mapstore/framework/components/I18N/Message';
+import { getConfigProp } from '@mapstore/framework/utils/ConfigUtils';
 import FaIcon from '@js/components/FaIcon';
 import useLocalStorage from '@js/hooks/useLocalStorage';
 import Menu from '@js/components/Menu';
+import tooltip from '@mapstore/framework/components/misc/enhancers/tooltip';
+
+const ButtonWithTooltip = tooltip(Button);
 
 const FiltersMenu = forwardRef(({
     formatHref,
@@ -23,17 +27,17 @@ const FiltersMenu = forwardRef(({
     style,
     onClick,
     defaultLabelId,
-    onClear,
     totalResources,
-    totalFilters,
-    filtersActive
+    totalFilters
 }, ref) => {
 
+    const { isMobile } = getConfigProp('geoNodeSettings');
     const selectedSort = orderOptions.find(({ value }) => order === value);
     const [cardLayoutStyle, setCardLayoutStyle] = useLocalStorage('layoutCardsStyle', 'grid');
     function handleToggleCardLayoutStyle() {
         setCardLayoutStyle(cardLayoutStyle === 'grid' ? 'list' : 'grid');
     }
+
     return (
         <div
             className="gn-filters-menu gn-menu gn-default"
@@ -43,33 +47,30 @@ const FiltersMenu = forwardRef(({
             <div className="gn-menu-container">
                 <div className="gn-menu-content">
                     <div className="gn-menu-fill">
-                        <Button
-                            variant={filtersActive ? 'primary' : 'default'}
+                        {totalFilters > 0 ? <ButtonWithTooltip
+                            variant="primary"
+                            size="sm"
+                            onClick={onClick}
+                            className="gn-success-changes-icon"
+                            tooltip={<Message msgId="gnhome.filterApplied" msgParams={{ count: totalFilters }}/>}
+                        >
+                            {isMobile ? <FaIcon name="filter" /> : <Message msgId="gnhome.filter"/>}
+                        </ButtonWithTooltip> : <Button
+                            variant="primary"
                             size="sm"
                             onClick={onClick}
                         >
-                            <FaIcon name="filter" />
-                        </Button>
+                            {isMobile ? <FaIcon name="filter" /> : <Message msgId="gnhome.filter"/>}
+                        </Button>}
                         {' '}
                         <Badge>
-                            <span className={"resources-count"}> <Message msgId="gnhome.resourcesFound" msgParams={{ count: totalResources }}/> </span>
-                            { totalFilters > 0 &&  <> {' '}|{' '}<span onClick={onClick} className={"resources-count"}> <Message msgId="gnhome.filterApplied" msgParams={{ count: totalFilters }}/></span> </>}
-                            {' '}
-                            { filtersActive &&
-
-                                <span className={"clear-pointer"}
-                                    onClick={onClear}
-                                ><FaIcon name={"trash"} className={"fa-sm"} />
-                                </span>
-
-                            }
-
+                            <span className="resources-count"> <Message msgId="gnhome.resourcesFound" msgParams={{ count: totalResources }}/> </span>
                         </Badge>
                     </div>
                     <Menu
                         items={cardsMenu}
                         containerClass={`gn-menu-list`}
-                        size="sm"
+                        size="md"
                         alignRight
                     />
                     <Button

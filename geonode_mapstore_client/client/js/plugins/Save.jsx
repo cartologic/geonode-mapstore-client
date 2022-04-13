@@ -34,29 +34,12 @@ import { setControlProperty } from '@mapstore/framework/actions/controls';
 import { getMessageById } from '@mapstore/framework/utils/LocaleUtils';
 
 /**
+* @module plugins/Save
+*/
+
+/**
  * Plugin for Save modal
  * @name Save
- * @class
- * @memberof plugins
- * @prop {object} cfg.thumbnailOptions the thumbnail is scaled based on the following configuration
- * @prop {number} cfg.thumbnailOptions.width final width of thumbnail
- * @prop {number} cfg.thumbnailOptions.height final height of thumbnail
- * @prop {string} cfg.thumbnailOptions.type type format of thumbnail 'image/jpeg' or 'image/png'
- * @prop {number} cfg.thumbnailOptions.quality image quality if type is 'image/jpeg', value between 0 and 1
- * @prop {bool} cfg.thumbnailOptions.contain if contain is true the thumbnail is contained in the width and height provided, if contain is false the image will cover the provided width and height
- * @example
- * {
- *   "name": "Save",
- *   "cfg": {
- *     "thumbnailOptions": {
- *       "width": 300,
- *       "height": 250,
- *       "type": "image/jpeg",
- *       "quality": 0.9,
- *       "contain": false
- *     }
- *   }
- * }
  */
 function Save(props) {
     return props.saving ? (<div

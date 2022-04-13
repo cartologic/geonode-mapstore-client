@@ -9,9 +9,18 @@
 import turfBbox from '@turf/bbox';
 import uuid from 'uuid';
 import url from 'url';
-import { getConfigProp } from '@mapstore/framework/utils/ConfigUtils';
+import { getConfigProp, convertFromLegacy, normalizeConfig } from '@mapstore/framework/utils/ConfigUtils';
 import { parseDevHostname } from '@js/utils/APIUtils';
 import { ProcessTypes, ProcessStatus } from '@js/utils/ResourceServiceUtils';
+import { bboxToPolygon } from '@js/utils/CoordinatesUtils';
+import uniqBy from 'lodash/uniqBy';
+import isString from 'lodash/isString';
+import isObject from 'lodash/isObject';
+import { excludeGoogleBackground, extractTileMatrixFromSources } from '@mapstore/framework/utils/LayersUtils';
+
+/**
+* @module utils/ResourceUtils
+*/
 
 function getExtentFromResource({ ll_bbox_polygon: llBboxPolygon }) {
     if (!llBboxPolygon) {
@@ -30,9 +39,20 @@ function getExtentFromResource({ ll_bbox_polygon: llBboxPolygon }) {
     return bbox;
 }
 
+export const GXP_PTYPES = {
+    'AUTO': 'gxp_wmscsource',
+    'OWS': 'gxp_wmscsource',
+    'WMS': 'gxp_wmscsource',
+    'WFS': 'gxp_wmscsource',
+    'WCS': 'gxp_wmscsource',
+    'REST_MAP': 'gxp_arcrestsource',
+    'REST_IMG': 'gxp_arcrestsource',
+    'HGL': 'gxp_hglsource',
+    'GN_WMS': 'gxp_geonodecataloguesource'
+};
+
 /**
 * convert resource layer configuration to a mapstore layer object
-* @memberof MenuUtils
 * @param {object} resource geonode layer resource
 * @return {object}
 */
@@ -45,55 +65,94 @@ export const resourceToLayerConfig = (resource) => {
         title,
         perms,
         pk,
-        has_time: hasTime
+        has_time: hasTime,
+        default_style: defaultStyle,
+        ptype
     } = resource;
 
     const bbox = getExtentFromResource(resource);
-
-    const { url: wfsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WFS') || {};
-    const { url: wmsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WMS') || {};
-    const { url: wmtsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WMTS') || {};
-
-    const dimensions = [
-        ...(hasTime ? [{
-            name: 'time',
-            source: {
-                type: 'multidim-extension',
-                url: wmtsUrl || (wmsUrl || '').split('/geoserver/')[0] + '/geoserver/gwc/service/wmts'
-            }
-        }] : [])
-    ];
-
-    const params = wmsUrl && url.parse(wmsUrl, true).query;
-    const format = getConfigProp('defaultLayerFormat') || 'image/png';
-
-    return {
-        perms,
-        id: uuid(),
-        pk,
-        type: 'wms',
-        name: alternate,
-        url: wmsUrl || '',
-        format,
-        ...(wfsUrl && {
-            search: {
-                type: 'wfs',
-                url: wfsUrl
-            }
-        }),
-        ...(bbox && { bbox }),
-        ...(template && {
-            featureInfo: {
-                format: 'TEMPLATE',
-                template
-            }
-        }),
-        style: '',
-        title,
-        visibility: true,
-        ...(params && { params }),
-        ...(dimensions.length > 0 && ({ dimensions }))
+    const defaultStyleParams = defaultStyle && {
+        defaultStyle: {
+            title: defaultStyle.sld_title,
+            name: defaultStyle.workspace ? `${defaultStyle.workspace}:${defaultStyle.name}` : defaultStyle.name
+        }
     };
+
+    const extendedParams = {
+        pk,
+        mapLayer: {
+            dataset: resource
+        },
+        ...defaultStyleParams
+    };
+
+    switch (ptype) {
+    case GXP_PTYPES.REST_MAP:
+    case GXP_PTYPES.REST_IMG: {
+        const { url: arcgisUrl } = links.find(({ mime, link_type: linkType }) => (mime === 'text/html' && linkType === 'image')) || {};
+        return {
+            perms,
+            id: uuid(),
+            pk,
+            type: 'arcgis',
+            name: alternate.replace('remoteWorkspace:', ''),
+            url: arcgisUrl,
+            ...(bbox && { bbox }),
+            title,
+            visibility: true,
+            extendedParams
+        };
+    }
+    default:
+        const { url: wfsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WFS') || {};
+        const { url: wmsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WMS') || {};
+        const { url: wmtsUrl } = links.find(({ link_type: linkType }) => linkType === 'OGC:WMTS') || {};
+
+        const dimensions = [
+            ...(hasTime ? [{
+                name: 'time',
+                source: {
+                    type: 'multidim-extension',
+                    url: wmtsUrl || (wmsUrl || '').split('/geoserver/')[0] + '/geoserver/gwc/service/wmts'
+                }
+            }] : [])
+        ];
+
+        const params = wmsUrl && url.parse(wmsUrl, true).query;
+        const {
+            defaultLayerFormat = 'image/png',
+            defaultTileSize = 512
+        } = getConfigProp('geoNodeSettings') || {};
+        return {
+            perms,
+            id: uuid(),
+            pk,
+            type: 'wms',
+            name: alternate,
+            url: wmsUrl || '',
+            format: defaultLayerFormat,
+            ...(wfsUrl && {
+                search: {
+                    type: 'wfs',
+                    url: wfsUrl
+                }
+            }),
+            ...(bbox && { bbox }),
+            ...(template && {
+                featureInfo: {
+                    format: 'TEMPLATE',
+                    template
+                }
+            }),
+            style: defaultStyleParams?.defaultStyle?.name || '',
+            title,
+            tileSize: defaultTileSize,
+            visibility: true,
+            ...(params && { params }),
+            ...(dimensions.length > 0 && ({ dimensions })),
+            extendedParams
+        };
+    }
 };
 
 function updateUrlQueryParameter(requestUrl, query) {
@@ -180,6 +239,11 @@ export function getGeoLimitsFromCompactPermissions({ groups = [], users = [], or
     return entries;
 }
 
+export const resourceHasPermission = (resource, perm) => {
+    return resource?.perms?.includes(perm);
+};
+
+
 export const ResourceTypes = {
     DATASET: 'dataset',
     MAP: 'map',
@@ -191,16 +255,18 @@ export const ResourceTypes = {
 export const getResourceTypesInfo = () => ({
     [ResourceTypes.DATASET]: {
         icon: 'database',
+        canPreviewed: (resource) => resourceHasPermission(resource, 'view_resourcebase'),
         formatEmbedUrl: (resource) => parseDevHostname(updateUrlQueryParameter(resource.embed_url, {
             config: 'dataset_preview'
         })),
         formatDetailUrl: (resource) => resource?.detail_url && parseDevHostname(resource.detail_url),
         name: 'Dataset',
-        formatMetadataUrl: (resource) => (`/datasets/${resource.alternate}/metadata`)
+        formatMetadataUrl: (resource) => (`/datasets/${resource.store}:${resource.alternate}/metadata`)
     },
     [ResourceTypes.MAP]: {
         icon: 'map',
         name: 'Map',
+        canPreviewed: (resource) => resourceHasPermission(resource, 'view_resourcebase'),
         formatEmbedUrl: (resource) => parseDevHostname(updateUrlQueryParameter(resource.embed_url, {
             config: 'map_preview'
         })),
@@ -210,6 +276,7 @@ export const getResourceTypesInfo = () => ({
     [ResourceTypes.DOCUMENT]: {
         icon: 'file',
         name: 'Document',
+        canPreviewed: (resource) => resourceHasPermission(resource, 'download_resourcebase'),
         formatEmbedUrl: (resource) => resource?.embed_url && parseDevHostname(resource.embed_url),
         formatDetailUrl: (resource) => resource?.detail_url && parseDevHostname(resource.detail_url),
         formatMetadataUrl: (resource) => (`/documents/${resource.pk}/metadata`)
@@ -217,6 +284,7 @@ export const getResourceTypesInfo = () => ({
     [ResourceTypes.GEOSTORY]: {
         icon: 'book',
         name: 'GeoStory',
+        canPreviewed: (resource) => resourceHasPermission(resource, 'view_resourcebase'),
         formatEmbedUrl: (resource) => resource?.embed_url && parseDevHostname(resource.embed_url),
         formatDetailUrl: (resource) => resource?.detail_url && parseDevHostname(resource.detail_url),
         formatMetadataUrl: (resource) => (`/apps/${resource.pk}/metadata`)
@@ -224,6 +292,7 @@ export const getResourceTypesInfo = () => ({
     [ResourceTypes.DASHBOARD]: {
         icon: 'dashboard',
         name: 'Dashboard',
+        canPreviewed: (resource) => resourceHasPermission(resource, 'view_resourcebase'),
         formatEmbedUrl: (resource) => resource?.embed_url && parseDevHostname(resource.embed_url),
         formatDetailUrl: (resource) => resource?.detail_url && parseDevHostname(resource.detail_url),
         formatMetadataUrl: (resource) => (`/apps/${resource.pk}/metadata`)
@@ -236,6 +305,10 @@ export const getMetadataUrl = (resource) => {
         return formatMetadataUrl(resource);
     }
     return '';
+};
+
+export const getMetadataDetailUrl = (resource) => {
+    return (getMetadataUrl(resource)) ? getMetadataUrl(resource) + '_detail' : '';
 };
 
 export const getResourceStatuses = (resource) => {
@@ -260,4 +333,264 @@ export const getResourceStatuses = (resource) => {
         isCopying,
         isCopied
     };
+};
+
+
+export let availableResourceTypes; // resource types utils to be imported intoby @js/api/geonode/v2, Share plugin and anywhere else needed
+/**
+ * A setter funtion to assign a value to availableResourceTypes
+ * @param {*} value Value to be assign to availableResourceTypes (gotten from resource_types response payload)
+ */
+export const setAvailableResourceTypes = (value) => {
+    availableResourceTypes = value;
+};
+
+/**
+ * Extracts lists of permissions into an object for use in the Share plugin select elements
+ * @param {Object} options Permission Object to extract permissions from
+ * @returns An object containing permissions for each type of user/group
+ */
+export const getResourcePermissions = (options) => {
+    const permissionsOptions = {};
+    Object.keys(options).forEach((key) => {
+        const permissions = options[key];
+        let selectOptions = [];
+        for (let indx = 0; indx < permissions.length; indx++) {
+            const permission = permissions[indx].name || permissions[indx];
+            const label = permissions[indx].label;
+            if (permission !== 'owner') {
+                selectOptions.push({
+                    value: permission,
+                    labelId: `gnviewer.${permission}Permission`,
+                    label
+                });
+            }
+        }
+        permissionsOptions[key] = selectOptions;
+    });
+
+    return permissionsOptions;
+};
+
+export function parseStyleName({ workspace, name }) {
+    const nameParts = name.split(':');
+    if (nameParts.length > 1) {
+        return name;
+    }
+    if (isString(workspace)) {
+        return `${workspace}:${name}`;
+    }
+    if (isObject(workspace) && workspace?.name !== undefined) {
+        return `${workspace.name}:${name}`;
+    }
+    return name;
+}
+
+export function cleanStyles(styles = [], excluded = []) {
+    return uniqBy(styles
+        .map(({ name, sld_title: sldTitle, title, workspace, metadata, format, canEdit }) => ({
+            name: parseStyleName({ workspace, name }),
+            title: sldTitle || title || name,
+            metadata,
+            format,
+            canEdit
+        })), 'name')
+        .filter(({ name }) => !excluded.includes(name));
+}
+
+export function getGeoNodeMapLayers(data) {
+    return (data?.map?.layers || [])
+        .filter(layer => layer?.extendedParams?.mapLayer)
+        .map((layer) => {
+            return {
+                ...(layer?.extendedParams?.mapLayer && {
+                    pk: layer.extendedParams.mapLayer.pk
+                }),
+                extra_params: {
+                    msId: layer.id,
+                    styles: cleanStyles(layer?.availableStyles)
+                        .map(({ canEdit, metadata, ...style }) => ({ ...style }))
+                },
+                current_style: layer.style || '',
+                name: layer.name
+            };
+        });
+}
+
+export function toGeoNodeMapConfig(data, mapState) {
+    if (!data) {
+        return {};
+    }
+    const maplayers = getGeoNodeMapLayers(data);
+    const { projection } = data?.map || {};
+    const { bbox } = mapState || {};
+    const llBboxPolygon = bboxToPolygon(bbox, 'EPSG:4326');
+    const bboxPolygon = bboxToPolygon(bbox, projection);
+    return {
+        maplayers,
+        ll_bbox_polygon: llBboxPolygon,
+        srid: projection,
+        // following properties are using the srid definition
+        bbox_polygon: bboxPolygon
+    };
+}
+
+export function compareBackgroundLayers(aLayer, bLayer) {
+    return aLayer.type === bLayer.type
+        && aLayer.name === bLayer.name
+        && aLayer.source === bLayer.source
+        && aLayer.provider === bLayer.provider
+        && aLayer.url === bLayer.url;
+}
+
+export function toMapStoreMapConfig(resource, baseConfig) {
+    const { maplayers = [], data } = resource || {};
+    const baseMapBackgroundLayers = (baseConfig?.map?.layers || []).filter(layer => layer.group === 'background');
+    const currentBackgroundLayer = (data?.map?.layers || [])
+        .filter(layer => layer.group === 'background')
+        .find(layer => layer.visibility && baseMapBackgroundLayers.find(bLayer => compareBackgroundLayers(layer, bLayer)));
+
+    const backgroundLayers = !currentBackgroundLayer
+        ? baseMapBackgroundLayers
+        : baseMapBackgroundLayers.map((layer) => ({
+            ...layer,
+            visibility: compareBackgroundLayers(layer, currentBackgroundLayer)
+        }));
+
+    const layers = (data?.map?.layers || [])
+        .filter(layer => layer.group !== 'background')
+        .map((layer) => {
+            const mapLayer = maplayers.find(mLayer => layer.id !== undefined && mLayer?.extra_params?.msId === layer.id);
+            if (mapLayer) {
+                const mapLayerDatasetStyles = cleanStyles([
+                    ...(mapLayer?.dataset?.defaul_style ? [mapLayer.dataset.defaul_style] : []),
+                    ...(mapLayer?.dataset?.styles || [])
+                ]).map(({ name }) => name);
+                return {
+                    ...layer,
+                    style: mapLayer.current_style || layer.style || '',
+                    availableStyles: cleanStyles(mapLayer?.extra_params?.styles || [], mapLayerDatasetStyles),
+                    featureInfo: {
+                        ...layer?.featureInfo,
+                        template: mapLayer?.dataset?.featureinfo_custom_template || ''
+                    },
+                    extendedParams: {
+                        ...layer.extendedParams,
+                        mapLayer
+                    }
+                };
+            }
+            if (!mapLayer && layer?.extendedParams?.mapLayer) {
+                return null;
+            }
+            return layer;
+        })
+        .filter(layer => layer);
+
+    // add all the map layers not included in the blob
+    const addMapLayers = maplayers
+        .filter(mLayer => mLayer?.dataset)
+        .filter(mLayer => !layers.find(layer => layer.id !== undefined && mLayer?.extra_params?.msId === layer.id))
+        .map(mLayer => resourceToLayerConfig(mLayer?.dataset));
+
+    return {
+        ...data,
+        map: {
+            ...data?.map,
+            layers: [
+                ...backgroundLayers,
+                ...layers,
+                ...addMapLayers
+            ],
+            sources: {
+                ...data?.map?.sources,
+                ...baseConfig?.map?.sources
+            }
+        }
+    };
+}
+
+/**
+ * Parse document response object (for image and video)
+ * @param {Object} docResponse api response object
+ * @param {Object} resource optional resource object
+ * @returns {Object} new document config object
+ */
+export const parseDocumentConfig = (docResponse, resource = {}) => {
+
+    return {
+        thumbnail: docResponse.thumbnail_url,
+        src: docResponse.href,
+        title: docResponse.title,
+        description: docResponse.raw_abstract,
+        credits: docResponse.attribution,
+        sourceId: docResponse.sourceId || 'geonode',
+        ...((docResponse.subtype || docResponse.type) === 'image' &&
+            { alt: docResponse.alternate, src: docResponse.href, ...(resource?.imgHeight && { imgHeight: resource?.imgHeight, imgWidth: resource?.imgWidth }) })
+    };
+};
+
+/**
+ * Parse map response object
+ * @param {Object} mapResponse api response object
+ * @param {Object} resource optional resource object
+ * @returns {Object} new map config object
+ */
+export const parseMapConfig = (mapResponse, resource = {}) => {
+
+    const { data, pk: id } = mapResponse;
+    const config = data;
+    const mapState = !config.version
+        ? convertFromLegacy(config)
+        : normalizeConfig(config.map);
+
+    const layers = excludeGoogleBackground(mapState.layers.map(layer => {
+        if (layer.group === 'background' && (layer.type === 'ol' || layer.type === 'OpenLayers.Layer')) {
+            layer.type = 'empty';
+        }
+        return layer;
+    }));
+
+    const map = {
+        ...(mapState && mapState.map || {}),
+        id,
+        sourceId: resource?.data?.sourceId || 'geonode',
+        groups: mapState && mapState.groups || [],
+        layers: mapState?.map?.sources
+            ? layers.map(layer => {
+                const tileMatrix = extractTileMatrixFromSources(mapState.map.sources, layer);
+                return { ...layer, ...tileMatrix };
+            })
+            : layers
+    };
+
+    return {
+        ...map,
+        id,
+        owner: mapResponse?.owner?.username,
+        canCopy: true,
+        canDelete: true,
+        canEdit: true,
+        name: resource?.data?.title || mapResponse?.title,
+        description: resource?.data?.description || mapResponse?.abstract,
+        thumbnail: resource?.data?.thumbnail || mapResponse?.thumbnail_url,
+        type: 'map'
+    };
+};
+
+/**
+* Util to check if resosurce can be cloned (Save As)
+* Requirements for copying are 'add_resource' permission and is_copyable property on resource
+*/
+export const canCopyResource = (resource, user) => {
+    const canAdd = user?.perms?.includes('add_resource');
+    const canCopy = resource?.is_copyable;
+    return (canAdd && canCopy) ? true : false;
+};
+
+export const excludeDeletedResources = (suppliedResources) => {
+    return suppliedResources.filter((resource) => {
+        const { isDeleted } = getResourceStatuses(resource);
+        return !isDeleted && resource;
+    });
 };

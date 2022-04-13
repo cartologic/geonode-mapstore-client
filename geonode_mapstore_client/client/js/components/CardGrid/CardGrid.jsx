@@ -26,7 +26,9 @@ const Cards = withResizeDetector(({
     buildHrefByTemplate,
     options,
     actions,
-    onAction
+    onAction,
+    onDownload,
+    downloading
 }) => {
 
     const width = containerWidth || detectedWidth;
@@ -88,25 +90,17 @@ const Cards = withResizeDetector(({
             style={cardLayoutStyle === 'list' ? {} : containerStyle}
         >
             {resources.map((resource, idx) => {
-                const {
-                    isProcessing,
-                    isDeleted
-                } = getResourceStatuses(resource);
-                // enable allowedOptions (menu cards) only for list layout
-                const allowedOptions =  (cardLayoutStyle === 'list' && !isProcessing) ? options
+                const { isProcessing } = getResourceStatuses(resource);
+                // enable allowedOptions (menu cards)
+                const allowedOptions =  !isProcessing ? options
                     .filter((opt) => hasPermissionsTo(resource?.perms, opt?.perms, 'resource')) : [];
-
-                if (isDeleted) {
-                    return null;
-                }
 
                 return (
                     <li
-                        key={resource.pk}
+                        key={resource.pk2 || resource.pk} // pk2 exists on clones to avoid duplicate keys
                         style={(layoutSpace(idx))}
                     >
                         <ResourceCard
-                            className={`${isDeleted ? 'deleted' : ''}`}
                             active={isCardActive(resource)}
                             data={resource}
                             formatHref={formatHref}
@@ -116,7 +110,9 @@ const Cards = withResizeDetector(({
                             actions={actions}
                             onAction={onAction}
                             loading={isProcessing}
-                            readOnly={isDeleted || isProcessing}
+                            readOnly={isProcessing}
+                            onDownload={onDownload}
+                            downloading={downloading?.find((download) => download.pk === resource.pk) ? true : false}
                         />
                     </li>
                 );
@@ -142,7 +138,9 @@ const CardGrid = ({
     scrollContainer,
     actions,
     onAction,
-    onControl
+    onControl,
+    onDownload,
+    downloading
 }) => {
 
     useInfiniteScroll({
@@ -159,9 +157,10 @@ const CardGrid = ({
         <div className="gn-card-grid">
             {header}
             <div style={{
-                display: 'flex'
+                display: 'flex',
+                width: '100%'
             }}>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, width: '100%' }}>
                     <div className="gn-card-grid-container" style={containerStyle}>
                         {children}
                         {messageId && <div className="gn-card-grid-message">
@@ -177,6 +176,8 @@ const CardGrid = ({
                             options={cardOptions}
                             buildHrefByTemplate={buildHrefByTemplate}
                             actions={actions}
+                            onDownload={onDownload}
+                            downloading={downloading}
                             onAction={(action, payload) => {
                                 if (action.isControlled) {
                                     onControl(action.processType, 'value', payload);

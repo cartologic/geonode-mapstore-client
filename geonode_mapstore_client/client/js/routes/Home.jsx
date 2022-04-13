@@ -36,8 +36,14 @@ import ConnectedCardGrid from '@js/routes/catalogue/ConnectedCardGrid';
 import { getFeaturedResults, getTotalResources } from '@js/selectors/search';
 import DeleteResource from '@js/plugins/DeleteResource';
 import SaveAs from '@js/plugins/SaveAs';
+import Notifications from '@mapstore/framework/plugins/Notifications';
+import { processResources, downloadResource } from '@js/actions/gnresource';
+import { setControlProperty } from '@mapstore/framework/actions/controls';
+import { featuredResourceDownload } from '@js/selectors/resourceservice';
+
 const { DeleteResourcePlugin } = DeleteResource;
 const { SaveAsPlugin } = SaveAs;
+const { NotificationsPlugin } = Notifications;
 
 const ConnectedFeatureList = connect(
     createSelector([
@@ -45,10 +51,17 @@ const ConnectedFeatureList = connect(
         state => state?.gnsearch?.featuredResources?.page || 1,
         state => state?.gnsearch?.featuredResources?.isNextPageAvailable || false,
         state => state?.gnsearch?.featuredResources?.isPreviousPageAvailable || false,
-        state => state?.gnsearch?.featuredResources?.loading || false
-    ], (resources, page, isNextPageAvailable, isPreviousPageAvailable, loading) => ({
-        resources, page, isNextPageAvailable, isPreviousPageAvailable, loading})
-    ), {loadFeaturedResources}
+        state => state?.gnsearch?.featuredResources?.loading || false,
+        getParsedGeoNodeConfiguration,
+        featuredResourceDownload
+    ], (resources, page, isNextPageAvailable, isPreviousPageAvailable, loading, { cardOptionsItemsAllowed }, downloading) => ({
+        resources, page, isNextPageAvailable, isPreviousPageAvailable, loading, cardOptions: cardOptionsItemsAllowed, downloading})
+    ), {
+        loadFeaturedResources,
+        onAction: processResources,
+        onControl: setControlProperty,
+        onDownload: downloadResource
+    }
 )(FeaturedList);
 
 function Home({
@@ -59,7 +72,8 @@ function Home({
     user,
     width,
     totalResources,
-    fetchFeaturedResources = () => {}
+    fetchFeaturedResources = () => {},
+    loading
 }) {
 
     const cataloguePage = '/catalogue/';
@@ -141,12 +155,14 @@ function Home({
                             totalResources={totalResources}
                             totalFilters={queryFilters.length}
                             filtersActive={!!(queryFilters.length > 0)}
+                            loading={loading}
                         />
                     </ConnectedCardGrid>
                 </div>
             </div>
             <DeleteResourcePlugin redirectTo={false} />
-            <SaveAsPlugin closeOnSave labelId="gnviewer.clone"/>
+            <SaveAsPlugin closeOnSave labelId="gnviewer.clone" />
+            <NotificationsPlugin />
         </div>
     );
 }
@@ -174,12 +190,14 @@ const ConnectedHome = connect(
         state => state?.gnsearch?.params || DEFAULT_PARAMS,
         userSelector,
         getParsedGeoNodeConfiguration,
-        getTotalResources
-    ], (params, user, config, totalResources) => ({
+        getTotalResources,
+        state => state?.gnsearch?.loading || false
+    ], (params, user, config, totalResources, loading) => ({
         params,
         user,
         config,
-        totalResources
+        totalResources,
+        loading
     })),
     {
         onSearch: searchResources,

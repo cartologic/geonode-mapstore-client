@@ -9,7 +9,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import ResizableModal from '@mapstore/framework/components/misc/ResizableModal';
-import Thumbnail from '@mapstore/framework/components/misc/Thumbnail';
 import Message from '@mapstore/framework/components/I18N/Message';
 import { Form, FormGroup, ControlLabel, FormControl as FormControlRB, Alert } from 'react-bootstrap';
 import localizedProps from '@mapstore/framework/components/misc/enhancers/localizedProps';
@@ -30,13 +29,11 @@ function SaveModal({
     onClose,
     onSave,
     onClear,
-    hideThumbnail,
     hideDescription,
-    thumbnailOptions
+    copy
 }) {
 
     const [thumbnail, setThumbnail] =  useState();
-    const [thumbnailError, setThumbnailError] =  useState();
     const [name, setName] =  useState('');
     const [description, setDescription] =  useState('');
     const [nameValidation, setNameValidation] =  useState(false);
@@ -46,6 +43,8 @@ function SaveModal({
         contentId,
         resource
     };
+
+    const currentModal = useRef(null);
 
     useEffect(() => {
         onClear();
@@ -57,7 +56,6 @@ function SaveModal({
             setThumbnail(res.thumbnail_url);
             setName(res.title);
             setDescription(res.abstract);
-            setThumbnailError(false);
             setNameValidation(!res.title
                 ? 'error'
                 : undefined);
@@ -66,118 +64,118 @@ function SaveModal({
 
     const isLoading = loading || saving;
 
+
+    useEffect(() => {
+        // clone on enter key press
+        if (copy && currentModal?.current) {
+            currentModal?.current?.addEventListener('keyup', (event) => {
+                if (event.keyCode === 13) {
+                    event.stopPropagation();
+                    onSave(
+                        update ? contentId : undefined,
+                        {
+                            thumbnail,
+                            name,
+                            description
+                        },
+                        true);
+                }
+            });
+        }
+        return () => currentModal?.current?.removeEventListener('keyup', () => {});
+    }, []);
+
     return (
         <Portal>
-            <ResizableModal
-                title={<Message msgId={labelId}/>}
-                show={enabled}
-                fitContent
-                clickOutEnabled={false}
-                buttons={isLoading
-                    ? []
-                    : [
-                        {
-                            text: <Message msgId="close"/>,
-                            onClick: () => onClose()
-                        },
-                        {
-                            text: <Message msgId={labelId}/>,
-                            disabled: !!nameValidation,
-                            bsStyle: 'primary',
-                            onClick: () => onSave(
-                                update ? contentId : undefined,
-                                {
-                                    thumbnail,
-                                    name,
-                                    description
-                                },
-                                true)
-                        }
-                    ]}
-                onClose={isLoading ? null : () => onClose()}
-            >
-                {error && <Alert bsStyle="danger" style={{ margin: 0 }}>
-                    <div><Message msgId="map.mapError.errorDefault" /></div>
-                </Alert>}
-                {success && <Alert bsStyle="success" style={{ margin: 0 }}>
-                    <div><Message msgId="saveDialog.saveSuccessMessage" /></div>
-                </Alert>}
-                <Form>
-                    {!hideThumbnail && <FormGroup
-                        validationState={thumbnailError ? 'error' : undefined}
-                    >
-                        <ControlLabel>
-                            <Message msgId="map.thumbnail"/>
-                        </ControlLabel>
-                        <Thumbnail
-                            thumbnail={thumbnail}
-                            thumbnailOptions={thumbnailOptions}
-                            message={<Message msgId="map.message"/>}
-                            onUpdate={(data) => {
-                                setThumbnail(data);
-                                setThumbnailError(false);
-                            }}
-                            onError={(newThumbnailError) => {
-                                setThumbnailError(newThumbnailError);
-                            }}
-                        />
-                        {thumbnailError && <div>
-                            <div><Message msgId="map.error"/></div>
-                            <div>{thumbnailError.indexOf && thumbnailError.indexOf('FORMAT') !== -1 && <small><Message msgId="map.errorFormat" /></small>}</div>
-                            <div>{thumbnailError.indexOf && thumbnailError.indexOf('SIZE') !== -1 && <small><Message msgId="map.errorSize" /></small>}</div>
-                        </div>}
-                    </FormGroup>}
-                    <FormGroup
-                        validationState={nameValidation}
-                    >
-                        <ControlLabel>
-                            <Message msgId="gnviewer.title" />
-                        </ControlLabel>
-                        <FormControl
-                            placeholder="gnviewer.titlePlaceholder"
-                            value={name}
-                            onChange={(event) => {
-                                setName(event.target.value);
-                                setNameValidation(!event.target.value
-                                    ? 'error'
-                                    : undefined);
-                            }}
-                            onBlur={(event) => {
-                                setNameValidation(!event.target.value
-                                    ? 'error'
-                                    : undefined
-                                );
-                            }}
-                        />
-                    </FormGroup>
-                    {!hideDescription && <FormGroup>
-                        <ControlLabel>
-                            <Message msgId="saveDialog.description" />
-                        </ControlLabel>
-                        <FormControl
-                            placeholder="saveDialog.descriptionPlaceholder"
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                        />
-                    </FormGroup>}
-                </Form>
-                {isLoading && <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        zIndex: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
+            <div ref={currentModal}>
+                <ResizableModal
+                    title={<Message msgId={labelId}/>}
+                    show={enabled}
+                    fitContent
+                    clickOutEnabled={false}
+                    buttons={isLoading
+                        ? []
+                        : [
+                            {
+                                text: <Message msgId="close"/>,
+                                onClick: () => onClose()
+                            },
+                            {
+                                text: <Message msgId={labelId}/>,
+                                disabled: !!nameValidation,
+                                bsStyle: 'primary',
+                                onClick: () => onSave(
+                                    update ? contentId : undefined,
+                                    {
+                                        thumbnail,
+                                        name,
+                                        description
+                                    },
+                                    true)
+                            }
+                        ]}
+                    onClose={isLoading ? null : () => onClose()}
                 >
-                    <Loader size={70}/>
-                </div>}
-            </ResizableModal>
+                    {error && <Alert bsStyle="danger" style={{ margin: 0 }}>
+                        <div><Message msgId="map.mapError.errorDefault" /></div>
+                    </Alert>}
+                    {success && <Alert bsStyle="success" style={{ margin: 0 }}>
+                        <div><Message msgId="saveDialog.saveSuccessMessage" /></div>
+                    </Alert>}
+                    <Form>
+                        <FormGroup
+                            validationState={nameValidation}
+                        >
+                            <ControlLabel>
+                                <Message msgId="gnviewer.title" />
+                            </ControlLabel>
+                            <FormControl
+                                autoFocus
+                                placeholder="gnviewer.titlePlaceholder"
+                                value={name}
+                                onChange={(event) => {
+                                    setName(event.target.value);
+                                    setNameValidation(!event.target.value
+                                        ? 'error'
+                                        : undefined);
+                                }}
+                                onBlur={(event) => {
+                                    setNameValidation(!event.target.value
+                                        ? 'error'
+                                        : undefined
+                                    );
+                                }}
+                            />
+                        </FormGroup>
+                        {!hideDescription && <FormGroup>
+                            <ControlLabel>
+                                <Message msgId="saveDialog.description" />
+                            </ControlLabel>
+                            <FormControl
+                                placeholder="saveDialog.descriptionPlaceholder"
+                                value={description}
+                                onChange={(event) => setDescription(event.target.value)}
+                            />
+                        </FormGroup>}
+                    </Form>
+                    {isLoading && <div
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                            zIndex: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        <Loader size={70}/>
+                    </div>}
+                </ResizableModal>
+            </div>
         </Portal>
     );
 }

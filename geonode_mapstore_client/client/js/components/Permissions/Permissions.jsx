@@ -30,13 +30,11 @@ function Permissions({
     layers = [],
     onChange = () => {},
     entriesTabs = [],
-    options,
-    groupOptions,
-    defaultGroupOptions,
     enableGeoLimits,
     requestGeoLimits = getGeoLimits,
     resourceId,
-    loading
+    loading,
+    permissionOptions
 }) {
 
     const { entries = [], groups = [] } = permissionsCompactToLists(compactPermissions);
@@ -170,17 +168,27 @@ function Permissions({
             <ul className="gn-share-permissions-list">
                 <li className="gn-share-permissions-pinned">
                     {filteredEntries
-                        .filter((item) => item.permissions === 'owner'  )
+                        .filter((item) => item.permissions === 'owner' && !item.is_superuser)
                         .map((item) => {
-                            return (<p className="gn-share-permissions-name" >
-                                <Message msgId="gnviewer.permissionOwner" />: {' '}
-                                <a href={`/people/profile/${item?.username}/`}>
-                                    {(item?.first_name !== "" && item?.last_name !== "") ?
-                                        (item?.first_name + ' ' + item?.last_name) :
-                                        item?.username
-                                    }
-                                </a>
-                            </p>);
+                            return (
+                                <div className="gn-share-permissions-row">
+                                    <p className="gn-share-permissions-label gn-share-permissions-name"><Message msgId="gnviewer.ownerPermission" />:</p>
+                                    <div className="gn-share-permissions-owner">
+                                        <div className="gn-share-permission-tag">
+                                            <div className="gn-share-permissions-icon">
+                                                {item.avatar
+                                                    ? <img src={item.avatar}/>
+                                                    : <FaIcon name={item.type} />}
+                                            </div>
+                                            <a className="gn-share-permissions-owners-name" href={`/people/profile/${item?.username}/`}>
+                                                {(item?.first_name !== "" && item?.last_name !== "") ?
+                                                    (item?.first_name + ' ' + item?.last_name) :
+                                                    item?.username
+                                                }
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>);
                         })}
                     {permissionsGroups
                         .map((group) => {
@@ -191,55 +199,11 @@ function Permissions({
                                     hideIcon
                                     onChange={handleUpdateGroup.bind(null, group.id)}
                                     name={<strong>{<Message msgId={`gnviewer.${group.name}`} />}</strong>}
-                                    options={groupOptions[group.name] || defaultGroupOptions}
+                                    options={permissionOptions?.[group.name] || permissionOptions?.default}
                                 />
                             );
                         })}
                 </li>
-
-                {filteredEntries
-                    .filter((item) => item.permissions !== 'owner'  )
-                    .map((entry, idx) => {
-                        return (
-                            <li
-                                key={entry.id + '-' + idx}
-                            >
-                                <PermissionsRow
-                                    {...entry}
-                                    onChange={handleUpdateEntry.bind(null, entry.id)}
-                                    options={options}
-                                >
-                                    {entry.permissions !== 'owner' &&
-                                    <>
-                                        {enableGeoLimits && <Popover
-                                            placement="left"
-                                            onOpen={(open) => {
-                                                if (open && !entry.features) {
-                                                    handleRequestGeoLimits(entry);
-                                                }
-                                            }}
-                                            content={
-                                                <GeoLimits
-                                                    key={entry.geoLimitsLoading}
-                                                    layers={layers}
-                                                    features={entry.features}
-                                                    loading={entry.geoLimitsLoading}
-                                                    onChange={(changes) => handleUpdateEntry(entry.id, { ...changes, isGeoLimitsChanged: true })}
-                                                    onRefresh={handleRequestGeoLimits.bind(null, entry)}
-                                                />
-                                            }>
-                                            <Button>
-                                                <FaIcon name="globe" />
-                                            </Button>
-                                        </Popover>}
-                                        <Button onClick={handleRemoveEntry.bind(null, entry)}>
-                                            <FaIcon name="trash" />
-                                        </Button>
-                                    </>}
-                                </PermissionsRow>
-                            </li>
-                        );
-                    })}
             </ul>
             <div className="gn-share-permissions-list-head">
                 <Popover
@@ -296,7 +260,6 @@ function Permissions({
                         <FaIcon name="times"/>
                     </Button>}
                 </div>
-
                 <div className="gn-share-permissions-head">
                     <div className="gn-share-permissions-row">
                         <div className="gn-share-permissions-name">
@@ -314,6 +277,50 @@ function Permissions({
                     </div>
                 </div>
             </div>
+            <ul className="gn-share-permissions-list">
+                {filteredEntries
+                    .filter((item) => item.permissions !== 'owner' && !item.is_superuser)
+                    .map((entry, idx) => {
+                        return (
+                            <li
+                                key={entry.id + '-' + idx}>
+                                <PermissionsRow
+                                    {...entry}
+                                    onChange={handleUpdateEntry.bind(null, entry.id)}
+                                    options={permissionOptions?.default}
+                                >
+                                    {entry.permissions !== 'owner' &&
+                                    <>
+                                        {enableGeoLimits && <Popover
+                                            placement="left"
+                                            onOpen={(open) => {
+                                                if (open && !entry.features) {
+                                                    handleRequestGeoLimits(entry);
+                                                }
+                                            }}
+                                            content={
+                                                <GeoLimits
+                                                    key={entry.geoLimitsLoading}
+                                                    layers={layers}
+                                                    features={entry.features}
+                                                    loading={entry.geoLimitsLoading}
+                                                    onChange={(changes) => handleUpdateEntry(entry.id, { ...changes, isGeoLimitsChanged: true })}
+                                                    onRefresh={handleRequestGeoLimits.bind(null, entry)}
+                                                />
+                                            }>
+                                            <Button>
+                                                <FaIcon name="globe" />
+                                            </Button>
+                                        </Popover>}
+                                        <Button onClick={handleRemoveEntry.bind(null, entry)}>
+                                            <FaIcon name="trash" />
+                                        </Button>
+                                    </>}
+                                </PermissionsRow>
+                            </li>
+                        );
+                    })}
+            </ul>
             {(filteredEntries.length === 0) &&
                 <div className="gn-permissions-alert">
                     <Message msgId="gnviewer.permissionsEntriesNoResults" />

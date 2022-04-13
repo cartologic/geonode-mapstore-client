@@ -28,6 +28,9 @@
         .background-color-var(@theme-vars[danger]);
         .color-var(@theme-vars[danger-contrast]);
     }
+    .gn-resource-status-pending {
+        .color-var(@theme-vars[warning]);
+    }
     .gn-resource-status-primary {
         .background-color-var(@theme-vars[primary]);
         .color-var(@theme-vars[primary-contrast]);
@@ -43,6 +46,7 @@
 // **************
 
 .gn-card-grid {
+    padding-top: 20px;
     .gn-card-grid-container {
         position: relative;
         max-width: @gn-page-max-width;
@@ -105,15 +109,10 @@
         }
 
     }
-    .card-resource-list {
-        display: flex;
-        flex: 1 1 auto;
-        .card-img-left{
-            width: 160px;
-            height: 135px;
-            object-fit: cover;
-        }
-    }
+}
+
+p.gn-resource-status-text {
+    margin: 0;
 }
 
 .gn-resource-status {
@@ -121,6 +120,12 @@
     border-radius: 2px;
     font-size: @font-size-sm;
     margin-right: 0.25rem;
+}
+
+.gn-resource-status-pending {
+    padding: 0;
+    text-transform: uppercase;
+    font-size: 1rem;
 }
 
 .gn-fixed-card-grid {

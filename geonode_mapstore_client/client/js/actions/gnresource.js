@@ -18,6 +18,7 @@ export const EDIT_TITLE_RESOURCE = 'GEONODE:EDIT_TITLE_RESOURCE';
 export const EDIT_ABSTRACT_RESOURCE = 'GEONODE:EDIT_ABSTRACT_RESOURCE';
 export const EDIT_THUMBNAIL_RESOURCE = 'GEONODE:EDIT_THUMBNAIL_RESOURCE';
 export const SET_FAVORITE_RESOURCE = 'GEONODE:SET_FAVORITE_RESOURCE';
+export const SET_MAP_THUMBNAIL = 'GEONODE:SET_MAP_THUMBNAIL';
 export const SET_SELECTED_DATASET_PERMISSIONS = "GEONODE:SET_SELECTED_DATASET_PERMISSIONS";
 export const REQUEST_RESOURCE_CONFIG = 'GEONODE:REQUEST_RESOURCE_CONFIG';
 export const REQUEST_NEW_RESOURCE_CONFIG = 'GEONODE:REQUEST_NEW_RESOURCE_CONFIG';
@@ -28,16 +29,20 @@ export const SET_RESOURCE_COMPACT_PERMISSIONS = 'GEONODE:SET_RESOURCE_COMPACT_PE
 export const UPDATE_RESOURCE_COMPACT_PERMISSIONS = 'GEONODE:UPDATE_RESOURCE_COMPACT_PERMISSIONS';
 export const RESET_GEO_LIMITS = 'GEONODE:RESET_GEO_LIMITS';
 export const PROCESS_RESOURCES = 'GEONODE:PROCESS_RESOURCES';
+export const SET_RESOURCE_THUMBNAIL = 'GEONODE_SET_RESOURCE_THUMBNAIL';
+export const ENABLE_MAP_THUMBNAIL_VIEWER = 'GEONODE_ENABLE_MAP_THUMBNAIL_VIEWER';
+export const DOWNLOAD_RESOURCE = 'GEONODE_DOWNLOAD_RESOURCE';
+export const DOWNLOAD_COMPLETE = 'GEONODE_DOWNLOAD_COMPLETE';
+
 
 /**
 * Actions for GeoNode resource
 * store information of the resource in use
-* @name actions.gnresource
+* @module actions/gnresource
 */
 
 /**
 * Initialize loading state
-* @memberof actions.gnresource
 */
 export function resourceLoading() {
     return {
@@ -47,7 +52,6 @@ export function resourceLoading() {
 
 /**
 * Set the resource in the state
-* @memberof actions.gnresource
 * @param {object} data resource data object
 */
 export function setResource(data) {
@@ -59,7 +63,6 @@ export function setResource(data) {
 
 /**
 * edit the title resource in the state
-* @memberof actions.gnresource
 * @param {string} title resource
 */
 export function editTitleResource(title) {
@@ -72,7 +75,6 @@ export function editTitleResource(title) {
 
 /**
 * edit the abstract resource in the state
-* @memberof actions.gnresource
 * @param {string} abstract resource
 */
 export function editAbstractResource(abstract) {
@@ -85,21 +87,27 @@ export function editAbstractResource(abstract) {
 
 /**
 * edit the image resource in the state
-* @memberof actions.gnresource
 * @param {string} image resource
 */
 
-export function editThumbnailResource(thumbnailUrl) {
+export function editThumbnailResource(thumbnailUrl, thumbnailChanged = 'false') {
 
     return {
         type: EDIT_THUMBNAIL_RESOURCE,
-        thumbnailUrl
+        thumbnailUrl,
+        thumbnailChanged
+    };
+}
+
+export function setResourceThumbnail() {
+
+    return {
+        type: SET_RESOURCE_THUMBNAIL
     };
 }
 
 /**
 * Set the resource type in the state
-* @memberof actions.gnresource
 * @param {object} resourceType resource type
 */
 export function setResourceType(resourceType) {
@@ -111,7 +119,6 @@ export function setResourceType(resourceType) {
 
 /**
 * Set error of resource request
-* @memberof actions.gnresource
 * @param {object} error error data object
 */
 export function resourceError(error) {
@@ -123,7 +130,6 @@ export function resourceError(error) {
 
 /**
 * Update resource properties
-* @memberof actions.gnresource
 * @param {object} properties resource properties to override
 */
 export function updateResourceProperties(properties) {
@@ -135,7 +141,6 @@ export function updateResourceProperties(properties) {
 
 /**
 * Set the current resource as new
-* @memberof actions.gnresource
 */
 export function setNewResource() {
     return {
@@ -145,7 +150,6 @@ export function setNewResource() {
 
 /**
 * Set resource id or primary key
-* @memberof actions.gnresource
 * @param {number|string} id resource id or primary key
 */
 export function setResourceId(id) {
@@ -157,7 +161,6 @@ export function setResourceId(id) {
 
 /**
 * Set resource permissions
-* @memberof actions.gnresource
 * @param {object} permissions permissions info
 * @param {bool} permissions.canEdit can edit permission
 * @param {bool} permissions.canView can view permission
@@ -171,7 +174,6 @@ export function setResourcePermissions(permissions) {
 
 /**
 * Set resource permissions
-* @memberof actions.gnresource
 * @param {object} permissions permissions info
 * @param {bool} permissions.canEdit can edit permission
 * @param {bool} permissions.canView can view permission
@@ -186,7 +188,6 @@ export function setSelectedDatasetPermissions(permissions) {
 
 /**
 * Set the resource favorite field (trigger epic gnSaveFavoriteContent)
-* @memberof actions.gnresource
 * @param {bool} favorite resource data field
 */
 export function setFavoriteResource(favorite) {
@@ -194,6 +195,28 @@ export function setFavoriteResource(favorite) {
     return {
         type: SET_FAVORITE_RESOURCE,
         favorite
+    };
+}
+
+/**
+* Enable or disable map thumbnail viewer
+*/
+
+export function enableMapThumbnailViewer(enabled) {
+    return {
+        type: ENABLE_MAP_THUMBNAIL_VIEWER,
+        enabled
+    };
+}
+
+/**
+* Set map like thumbnail to map or layer (trigger epic gnSaveDirectContent)
+*/
+
+export function setMapThumbnail(bbox) {
+    return {
+        type: SET_MAP_THUMBNAIL,
+        bbox: bbox
     };
 }
 
@@ -258,5 +281,19 @@ export function processResources(processType, resources, redirectTo) {
         processType,
         resources,
         redirectTo
+    };
+}
+
+export function downloadResource(resource) {
+    return {
+        type: DOWNLOAD_RESOURCE,
+        resource
+    };
+}
+
+export function downloadComplete(resource) {
+    return {
+        type: DOWNLOAD_COMPLETE,
+        resource
     };
 }

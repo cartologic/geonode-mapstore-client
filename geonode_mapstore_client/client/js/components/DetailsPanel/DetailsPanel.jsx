@@ -8,22 +8,32 @@
  */
 
 import React, { useRef, useState, useEffect } from 'react';
+import { Glyphicon } from 'react-bootstrap';
 import FaIcon from '@js/components/FaIcon';
 import Button from '@js/components/Button';
 import Tabs from '@js/components/Tabs';
 import DefinitionList from '@js/components/DefinitionList';
-import Table from '@js/components/Table';
 import Spinner from '@js/components/Spinner';
 import Message from '@mapstore/framework/components/I18N/Message';
 import tooltip from '@mapstore/framework/components/misc/enhancers/tooltip';
 import moment from 'moment';
-import { getUserName } from '@js/utils/SearchUtils';
-import { getResourceTypesInfo } from '@js/utils/ResourceUtils';
+import { getResourceTypesInfo, getMetadataDetailUrl, ResourceTypes, GXP_PTYPES } from '@js/utils/ResourceUtils';
 import debounce from 'lodash/debounce';
 import CopyToClipboardCmp from 'react-copy-to-clipboard';
 import { TextEditable, ThumbnailEditable } from '@js/components/ContentsEditable/';
 import ResourceStatus from '@js/components/ResourceStatus/';
+import BaseMap from '@mapstore/framework/components/map/BaseMap';
+import mapTypeHOC from '@mapstore/framework/components/map/enhancers/mapType';
+import AuthorInfo from '@js/components/AuthorInfo/AuthorInfo';
+import Loader from '@mapstore/framework/components/misc/Loader';
+import { getUserName } from '@js/utils/SearchUtils';
+import ZoomTo from '@js/components/ZoomTo';
+import { boundsToExtentString } from '@js/utils/CoordinatesUtils';
 
+const Map = mapTypeHOC(BaseMap);
+Map.displayName = 'Map';
+
+const MapThumbnailButtonToolTip = tooltip(Button);
 const CopyToClipboard = tooltip(CopyToClipboardCmp);
 
 const EditTitle = ({ title, onEdit, tagName, disabled }) => {
@@ -51,11 +61,14 @@ const EditAbstract = ({ abstract, onEdit, tagName, disabled }) => (
 );
 
 
-const EditThumbnail = ({ image, onEdit }) => (
+const EditThumbnail = ({ image, onEdit, thumbnailUpdating }) => (
     <div className="editContainer imagepreview">
         <ThumbnailEditable onEdit={onEdit} defaultImage={image} />
+        {thumbnailUpdating && <div className="gn-details-thumbnail-loader">
+            <Loader size={50} />
+        </div>
+        }
     </div>
-
 );
 
 
@@ -98,26 +111,73 @@ function ThumbnailPreview({
 }
 
 
-const DefinitionListMoreItem = ({itemslist, extraItemsList}) => {
-
-    const [extraItems, setExtraItems] = useState(false);
-    const handleMoreInfo = () => {
-        setExtraItems(!extraItems);
-    };
+const DefinitionListContainer = ({itemslist}) => {
 
     return (
         <div className="DList-containner">
             <DefinitionList itemslist={itemslist} />
-
-            { extraItemsList.length > 0 && <a className={"moreinfo"} href="javascript:void(0);"  onClick={handleMoreInfo}><Message msgId={"gnviewer.moreinfo"} /></a> }
-
-            {extraItemsList.length > 0 && extraItems && <DefinitionList itemslist={extraItemsList} />}
         </div>
 
 
     );
 };
 
+const MapThumbnailView = ({ initialBbox, layers, onMapThumbnail, onClose, savingThumbnailMap } ) => {
+
+    const [currentBbox, setCurrentBbox] = useState();
+    const { bounds, crs } = initialBbox;
+    const extent = boundsToExtentString(bounds, crs);
+
+    function handleOnMapViewChanges(center, zoom, bbox) {
+        setCurrentBbox(bbox);
+    }
+
+    return (
+        <div>
+            <div
+                className="gn-detail-extent"
+            >
+                <Map
+                    id="gn-filter-by-extent-map"
+                    mapType="openlayers"
+                    map={{
+                        registerHooks: false,
+                        projection: 'EPSG:3857' // to use parameter projection
+                    }}
+                    styleMap={{
+                        position: 'absolute',
+                        width: '100%',
+                        height: '100%'
+                    }}
+                    eventHandlers={{
+                        onMapViewChanges: handleOnMapViewChanges
+                    }}
+                    layers={[
+                        ...(layers ? layers : [])
+                    ]}
+                >
+                    <ZoomTo extent={extent} />
+                </Map>
+                {savingThumbnailMap && <div className="gn-details-thumbnail-loader">
+                    <Loader size={50} />
+                </div>
+                }
+            </div>
+            <div className="gn-detail-extent-action">
+                <Button className="btn-primary" onClick={() => onMapThumbnail(currentBbox)} ><Message msgId={"gnhome.apply"} /></Button><Button onClick={() => onClose(false) }><i className="fa fa-close"/></Button></div>
+        </div>
+    );
+
+};
+
+
+const extractResourceString = (res) => {
+    const resourceFirstLetter = res?.charAt(0).toUpperCase();
+    const restOfResourceLetters = res?.slice(1);
+    const resourceTypeString = resourceFirstLetter + restOfResourceLetters;
+    return resourceTypeString;
+
+};
 
 function DetailsPanel({
     resource,
@@ -125,6 +185,7 @@ function DetailsPanel({
     linkHref,
     sectionStyle,
     loading,
+    downloading,
     getTypesInfo,
     editTitle,
     editAbstract,
@@ -133,7 +194,18 @@ function DetailsPanel({
     closePanel,
     favorite,
     onFavorite,
-    enableFavorite
+    enableFavorite,
+    onMapThumbnail,
+    savingThumbnailMap,
+    layers,
+    isThumbnailChanged,
+    onResourceThumbnail,
+    resourceThumbnailUpdating,
+    initialBbox,
+    enableMapViewer,
+    onClose,
+    onAction,
+    canDownload
 }) {
     const detailsContainerNode = useRef();
     const isMounted = useRef();
@@ -162,17 +234,24 @@ function DetailsPanel({
         onFavorite(!favorite);
     };
 
+    const handleResourceThumbnailUpdate = () => {
+        onResourceThumbnail();
+    };
+
     const types = getTypesInfo();
     const {
         formatEmbedUrl = res => res?.embed_url,
         formatDetailUrl = res => res?.detail_url,
+        canPreviewed,
         icon,
         name
     } = resource && (types[resource.subtype] || types[resource.resource_type]) || {};
     const embedUrl = resource?.embed_url && formatEmbedUrl(resource);
     const detailUrl = resource?.pk && formatDetailUrl(resource);
-    const documentDownloadUrl = (resource?.href && resource?.href.includes('download')) ? resource?.href : undefined;
-    const attributeSet = resource?.attribute_set;
+    const resourceCanPreviewed = resource?.pk && canPreviewed && canPreviewed(resource);
+    const downloadUrl = (resource?.href && resource?.href.includes('download')) ? resource?.href
+        : (resource?.download_url && canDownload) ? resource?.download_url : undefined;
+    const metadataDetailUrl = resource?.pk && getMetadataDetailUrl(resource);
 
     const validateDataType = (data) => {
 
@@ -189,7 +268,6 @@ function DetailsPanel({
 
         return dataType;
     };
-
 
     const infoField = [
         {
@@ -314,28 +392,20 @@ function DetailsPanel({
     const itemsTab = [
         {
             title: <Message msgId={"gnviewer.info"} />,
-            data: <DefinitionListMoreItem itemslist={infoField} extraItemsList={extraItemsList} />
+            data: <DefinitionListContainer itemslist={[...infoField, ...extraItemsList]} />
         }
 
     ];
 
-    const tableHead = [{
-        key: "attribute",
-        value: <Message msgId={"gnviewer.attributeName"} />
-    },
-    {
-        key: "attribute_label",
-        value: <Message msgId={"gnviewer.label"} />
-    },
-    {
-        key: "description",
-        value: <Message msgId={"gnviewer.description"} />
-    }];
-
-    (attributeSet) ? itemsTab.push({
-        title: <Message msgId={"gnviewer.attributes"} />,
-        data: <Table head={tableHead} body={attributeSet} />
-    }) : undefined;
+    const ResourceMessage = ({ type }) => {
+        return (<span className="gn-details-panel-origin">
+            <Message msgId="gnviewer.resourceOrigin.a" />{' '}<a href={formatHref({
+                query: {
+                    'filter{resource_type.in}': type
+                }
+            })} title="Search all similar resources">{type || 'resource'}</a>{' '}<Message msgId="gnviewer.resourceOrigin.from" />{' '}
+        </span>);
+    };
 
     return (
         <div
@@ -349,12 +419,13 @@ function DetailsPanel({
                         variant="default"
                         href={linkHref()}
                         onClick={closePanel}
-                        size="sm">
-                        <FaIcon name="times" />
+                        className="square-button">
+                        <Glyphicon glyph="1-close" />
                     </Button>
                 </div>
                 }
-                {!activeEditMode && !editThumbnail && <div className="gn-details-panel-preview">
+
+                {resourceCanPreviewed && !activeEditMode && !editThumbnail && <div className="gn-details-panel-preview">
                     <div
                         className="gn-loader-placeholder"
                         style={{
@@ -411,14 +482,45 @@ function DetailsPanel({
                 <div className="gn-details-panel-content">
                     {editThumbnail && <div className="gn-details-panel-content-img">
                         {!activeEditMode && <ThumbnailPreview src={resource?.thumbnail_url} />}
-                        {activeEditMode && <div className="gn-details-panel-preview inediting"> <EditThumbnail onEdit={editThumbnail} image={resource?.thumbnail_url} /> </div>}
+                        {activeEditMode && <div className="gn-details-panel-preview inediting">
+                            {!enableMapViewer ? <> <EditThumbnail
+                                onEdit={editThumbnail}
+                                image={resource?.thumbnail_url}
+                                thumbnailUpdating={resourceThumbnailUpdating}
+                            />
+                            {
+                                ((resource.resource_type === ResourceTypes.MAP || resource.resource_type === ResourceTypes.DATASET) && (resource.ptype !== GXP_PTYPES.REST_IMG || resource.ptype !== GXP_PTYPES.REST_MAP)) &&
+                                ( <><MapThumbnailButtonToolTip
+                                    variant="default"
+                                    onClick={() => onClose(!enableMapViewer)}
+                                    className="map-thumbnail"
+                                    tooltip={<Message msgId="gnviewer.saveMapThumbnail" />}
+                                    tooltipPosition={"top"}
+                                >
+                                    <FaIcon name="map" />
+                                </MapThumbnailButtonToolTip>
+                                </>)
+                            }
+                            {isThumbnailChanged && <Button style={{
+                                left: ((resource.resource_type === ResourceTypes.MAP || resource.resource_type === ResourceTypes.DATASET) && (resource.ptype !== GXP_PTYPES.REST_IMG || resource.ptype !== GXP_PTYPES.REST_MAP)) ? '85px' : '50px'
+                            }} variant="primary" className="map-thumbnail apply-button" onClick={handleResourceThumbnailUpdate}><Message msgId={"gnhome.apply"} /></Button>}
+                            </>
+                                : <MapThumbnailView
+                                    layers={layers}
+                                    onMapThumbnail={onMapThumbnail}
+                                    onClose={onClose}
+                                    savingThumbnailMap={savingThumbnailMap}
+                                    initialBbox={initialBbox}
+                                />
+                            }
+                        </div>}
                     </div>
                     }
 
 
                     <div className="gn-details-panel-content-text">
                         <div className="gn-details-panel-title" >
-                            <span className="gn-details-panel-title-icon" ><FaIcon name={icon} /> </span> <EditTitle disabled={!activeEditMode} tagName="h1"  title={resource?.title} onEdit={editTitle} >
+                            <span className="gn-details-panel-title-icon" >{!downloading ? <FaIcon name={icon} /> : <Spinner />} </span> <EditTitle disabled={!activeEditMode} tagName="h1"  title={resource?.title} onEdit={editTitle} >
 
                             </EditTitle>
 
@@ -432,9 +534,9 @@ function DetailsPanel({
                                         <FaIcon name={favorite ? 'star' : 'star-o'} />
                                     </Button>
                                     }
-                                    {documentDownloadUrl &&
+                                    {downloadUrl &&
                                     <Button variant="default"
-                                        href={documentDownloadUrl} >
+                                        onClick={() => onAction(resource)} >
                                         <FaIcon name="download" />
                                     </Button>}
 
@@ -455,10 +557,10 @@ function DetailsPanel({
                                     </CopyToClipboard>
                                     }
                                     {detailUrl && !editThumbnail && <Button
-                                        variant="default"
-                                        href={detailUrl}
+                                        variant="primary"
+                                        href={(resourceCanPreviewed) ? detailUrl : metadataDetailUrl}
                                         rel="noopener noreferrer">
-                                        <Message msgId={`gnhome.view${name || ''}`} />
+                                        <Message msgId={`gnhome.view${((resourceCanPreviewed) ? name : 'Metadata')}`} />
                                     </Button>}
                                 </div>
                             }
@@ -466,19 +568,18 @@ function DetailsPanel({
 
                         </div>
                         <ResourceStatus resource={resource} />
-                        {<p>
-                            {resource?.owner && <><a href={formatHref({
-                                pathname: editTitle && '/search/filter/',
-                                query: {
-                                    'filter{owner.username.in}': resource.owner.username
-                                }
-                            })}>{getUserName(resource.owner)}</a></>}
+                        {<p className="gn-details-panel-meta-text">
+                            {resource?.owner &&  <>{resource?.owner.avatar &&
+                            <img src={resource?.owner.avatar} alt={getUserName(resource?.owner)} className="gn-card-author-image" />
+                            }
+                            <ResourceMessage type={resource?.resource_type} />
+                            <AuthorInfo resource={resource} formatHref={formatHref} style={{ margin: 0 }} detailsPanel /></>}
                             {(resource?.date_type && resource?.date)
                             && <>{' '}/{' '}{moment(resource.date).format('MMMM Do YYYY')}</>}
                         </p>
                         }
 
-                        <EditAbstract disabled={!activeEditMode} tagName="span"  abstract={resource?.abstract} onEdit={editAbstract} />
+                        <EditAbstract disabled tagName="span" abstract={resource?.abstract} onEdit={editAbstract} />
                         <p>
                             {resource?.category?.identifier && <div>
                                 <Message msgId="gnhome.category" />:{' '}
@@ -487,7 +588,7 @@ function DetailsPanel({
                                     query: {
                                         'filter{category.identifier.in}': resource.category.identifier
                                     }
-                                })}>{resource.category.identifier}</a>
+                                })}>{extractResourceString(resource.category.identifier)}</a>
                             </div>}
                         </p>
                     </div>
@@ -502,8 +603,11 @@ DetailsPanel.defaultProps = {
     onClose: () => { },
     formatHref: () => '#',
     linkHref: () => '#',
+    onResourceThumbnail: () => '#',
     width: 696,
-    getTypesInfo: getResourceTypesInfo
+    getTypesInfo: getResourceTypesInfo,
+    isThumbnailChanged: false,
+    onAction: () => {}
 };
 
 export default DetailsPanel;

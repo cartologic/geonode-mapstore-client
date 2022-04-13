@@ -1,17 +1,17 @@
 const path = require('path');
 const fs = require('fs');
+const envConfig = fs.existsSync(path.join(__dirname, '.env'))
+    ? require('dotenv').config().parsed
+    : {};
 
 module.exports = (devServerDefault, projectConfig) => {
 
     const appDirectory = projectConfig.appDirectory;
-    const envPath = path.resolve(appDirectory, 'env.json');
-    const envJson = fs.existsSync(envPath) ? require(envPath) : {};
-    const packageJSON = require(path.resolve(appDirectory, 'package.json')) || {};
-    const geoNodeProjectConfig = packageJSON.geonode || {};
-    const devServerOptions = geoNodeProjectConfig.devServer || {};
-    const devServerHost = devServerOptions.host || envJson.DEV_SERVER_HOST || 'localhost';
-    const proxyTargetHost = devServerOptions.proxyTargetHost || envJson.DEV_SERVER_PROXY_TARGET_HOST || 'localhost:8000';
-    const protocol = devServerOptions.protocol || envJson.DEV_SERVER_HOST_PROTOCOL || 'http';
+    const devServerHost = envConfig.DEV_SERVER_HOSTNAME || 'localhost';
+    const proxyTargetHost = envConfig.DEV_TARGET_GEONODE_HOST || 'localhost:8000';
+    const protocol = envConfig.DEV_SERVER_PROTOCOL || 'http';
+
+    const proxyTargetURL = `${protocol}://${proxyTargetHost}`;
 
     return {
         clientLogLevel: 'debug',
@@ -36,6 +36,11 @@ module.exports = (devServerDefault, projectConfig) => {
                     req.path = req.path.replace(hashRegex, '.js');
                     req.originalUrl = req.originalUrl.replace(hashRegex, '.js');
                 }
+                if (req.url.matches(proxyTargetURL)) {
+                    req.url = req.url.replace(proxyTargetURL, '');
+                    req.path = req.path.replace(proxyTargetURL, '');
+                    req.originalUrl = req.originalUrl.replace(proxyTargetURL, '');
+                }
                 next();
             });
         },
@@ -45,18 +50,20 @@ module.exports = (devServerDefault, projectConfig) => {
                     '**',
                     '!**/static/mapstore/**',
                     '!**/MapStore2/**',
-                    '!**/node_modules/**'
+                    '!**/node_modules/**',
+                    '!**/docs/**'
                 ],
-                target: `${protocol}://${proxyTargetHost}`,
+                target: proxyTargetURL,
                 headers: {
                     Host: proxyTargetHost,
-                    Referer: `${protocol}://${proxyTargetHost}/`
+                    Referer: `${proxyTargetURL}/`
                 }
             },
             {
                 context: [
                     '/static/mapstore/ms-translations/**',
-                    '/static/mapstore/gn-translations/**'
+                    '/static/mapstore/gn-translations/**',
+                    '/docs/**'
                 ],
                 target: `${protocol}://${devServerHost}:8081`,
                 secure: false,

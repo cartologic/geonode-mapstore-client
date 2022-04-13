@@ -13,6 +13,7 @@ import { connect } from 'react-redux';
 
 import security from '@mapstore/framework/reducers/security';
 import controls from '@mapstore/framework/reducers/controls';
+import notifications from '@mapstore/framework/reducers/notifications';
 import Home from '@js/routes/Home';
 
 import gnsearch from '@js/reducers/gnsearch';
@@ -20,7 +21,10 @@ import gnresource from '@js/reducers/gnresource';
 import resourceservice from '@js/reducers/resourceservice';
 import gnsearchEpics from '@js/epics/gnsearch';
 import gnsaveEpics from '@js/epics/gnsave';
+import gnsettings from '@js/reducers/gnsettings';
 import resourceServiceEpics from '@js/epics/resourceservice';
+
+import { updateGeoNodeSettings } from '@js/actions/gnsettings';
 
 import {
     getConfiguration,
@@ -31,7 +35,8 @@ import {
 
 import {
     setupConfiguration,
-    initializeApp
+    initializeApp,
+    storeEpicsCache
 } from '@js/utils/AppUtils';
 
 const DEFAULT_LOCALE = {};
@@ -56,38 +61,48 @@ Promise.all([
     getEndpoints()
 ])
     .then(([localConfig, user, resourcesTotalCount]) => {
-        const {
-            securityState,
-            geoNodeConfiguration
-        } = setupConfiguration({
+        setupConfiguration({
             localConfig,
             user,
             resourcesTotalCount
-        });
+        })
+            .then(({
+                securityState,
+                geoNodeConfiguration,
+                settings
+            }) => {
+                const appEpics = {
+                    ...gnsearchEpics,
+                    ...gnsaveEpics,
+                    ...resourceServiceEpics
+                };
 
-        // home app entry point
-        main({
-            appComponent: withRoutes(routes)(ConnectedRouter),
-            loaderComponent: MainLoader,
-            initialState: {
-                defaultState: {
-                    ...securityState
-                }
-            },
-            pluginsConfig: localConfig.plugins || [],
-            themeCfg: null,
-            appReducers: {
-                gnsearch,
-                gnresource,
-                resourceservice,
-                security,
-                controls
-            },
-            appEpics: {
-                ...gnsearchEpics,
-                ...gnsaveEpics,
-                ...resourceServiceEpics
-            },
-            geoNodeConfiguration
-        });
+                storeEpicsCache(appEpics);
+                // home app entry point
+                main({
+                    appComponent: withRoutes(routes)(ConnectedRouter),
+                    loaderComponent: MainLoader,
+                    initialState: {
+                        defaultState: {
+                            ...securityState
+                        }
+                    },
+                    pluginsConfig: localConfig.plugins || [],
+                    themeCfg: null,
+                    appReducers: {
+                        gnsearch,
+                        gnresource,
+                        resourceservice,
+                        security,
+                        controls,
+                        gnsettings,
+                        notifications
+                    },
+                    appEpics,
+                    geoNodeConfiguration,
+                    initialActions: [
+                        updateGeoNodeSettings.bind(null, settings)
+                    ]
+                });
+            });
     });

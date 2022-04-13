@@ -8,12 +8,51 @@
 
 import { getResourceData } from '@js/selectors/resource';
 import { ProcessTypes } from '@js/utils/ResourceServiceUtils';
+import { getSearchResults, getFeaturedResults } from '@js/selectors/search';
 
-export const isProcessCompleted = (state, payload) =>
-    (state?.resourceservice?.processes?.find(process =>
+export const isProcessCompleted = (state, payload) => {
+    const completedProcess = state?.resourceservice?.processes?.find(process =>
         process?.resource?.pk === payload?.resource?.pk
-            && process?.processType === payload?.processType
-    ) || {}).completed;
+        && process?.processType === payload?.processType
+    ) || {};
+
+    return completedProcess.completed;
+};
+
+export const processingDownload = (state) => {
+    const resource = getResourceData(state);
+    const isProcessingDownload = state?.resourceservice?.downloads?.find((download) =>
+        download?.pk === resource?.pk
+    );
+    const downloading = isProcessingDownload ? true : false;
+    return downloading;
+};
+
+export const generalResourceDownload = (state) => {
+    const generalResources = getSearchResults(state);
+    const downloads = state?.resourceservice?.downloads || [];
+    const generalDownloads = generalResources?.reduce((acc, resource) => {
+        const downloadingResources = downloads.find(download => download.pk === resource.pk);
+        if (downloadingResources) {
+            return [...acc, { ...resource }];
+        }
+        return [...acc];
+    }, []);
+    return generalDownloads;
+};
+
+export const featuredResourceDownload = (state) => {
+    const featuredResources = getFeaturedResults(state);
+    const downloads = state?.resourceservice?.downloads || [];
+    const featuredDownloads = featuredResources?.reduce((acc, resource) => {
+        const downloadingResources = downloads.find(download => download.pk === resource.pk);
+        if (downloadingResources) {
+            return [...acc, { ...resource }];
+        }
+        return [...acc];
+    }, []);
+    return featuredDownloads;
+};
 
 export const getCurrentResourcePermissionsLoading = (state) => {
     const resource = getResourceData(state);
@@ -43,4 +82,9 @@ export const getCurrentResourceDeleteLoading = (state) => {
     );
     const isLoading = permissionsProcess ? !permissionsProcess?.completed : false;
     return isLoading;
+};
+
+export const getCurrentProcesses = (state) => {
+    const processes = state?.resourceservice?.processes || [];
+    return processes;
 };

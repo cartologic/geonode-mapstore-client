@@ -16,74 +16,96 @@ import {
     editTitleResource,
     editAbstractResource,
     editThumbnailResource,
-    setFavoriteResource
+    setFavoriteResource,
+    setMapThumbnail,
+    setResourceThumbnail,
+    enableMapThumbnailViewer,
+    downloadResource
 } from '@js/actions/gnresource';
+import { processingDownload } from '@js/selectors/resourceservice';
+import FaIcon from '@js/components/FaIcon/FaIcon';
 import controls from '@mapstore/framework/reducers/controls';
 import { setControlProperty } from '@mapstore/framework/actions/controls';
 import gnresource from '@js/reducers/gnresource';
-import Message from '@mapstore/framework/components/I18N/Message';
 import {
     canEditResource,
     isNewResource,
-    getResourceId
+    getResourceId,
+    isThumbnailChanged,
+    updatingThumbnailResource
 } from '@js/selectors/resource';
 import Button from '@js/components/Button';
-import PropTypes from 'prop-types';
 import useDetectClickOut from '@js/hooks/useDetectClickOut';
 import OverlayContainer from '@js/components/OverlayContainer';
 import { withRouter } from 'react-router';
-import {
-    hashLocationToHref
-} from '@js/utils/SearchUtils';
+import { hashLocationToHref } from '@js/utils/SearchUtils';
+import Message from '@mapstore/framework/components/I18N/Message';
+import { layersSelector } from '@mapstore/framework/selectors/layers';
+import { mapSelector } from '@mapstore/framework/selectors/map';
+import { resourceHasPermission } from '@js/utils/ResourceUtils';
 
 const ConnectedDetailsPanel = connect(
     createSelector([
         state => state?.gnresource?.data || null,
         state => state?.gnresource?.loading || false,
-        state => state?.gnresource?.data?.favorite || false
-    ], (resource, loading, favorite) => ({
+        state => state?.gnresource?.data?.favorite || false,
+        state => state?.gnsave?.savingThumbnailMap || false,
+        layersSelector,
+        isThumbnailChanged,
+        updatingThumbnailResource,
+        mapSelector,
+        state => state?.gnresource?.showMapThumbnail || false,
+        processingDownload
+    ], (resource, loading, favorite, savingThumbnailMap, layers, thumbnailChanged, resourceThumbnailUpdating, mapData, showMapThumbnail, downloading) => ({
+        layers: layers,
         resource,
         loading,
-        favorite
+        savingThumbnailMap,
+        favorite,
+        isThumbnailChanged: thumbnailChanged,
+        resourceThumbnailUpdating,
+        initialBbox: mapData?.bbox,
+        enableMapViewer: showMapThumbnail,
+        downloading,
+        canDownload: resourceHasPermission(resource, 'download_resourcebase')
     })),
     {
         closePanel: setControlProperty.bind(null, 'rightOverlay', 'enabled', false),
-        onFavorite: setFavoriteResource
+        onFavorite: setFavoriteResource,
+        onMapThumbnail: setMapThumbnail,
+        onResourceThumbnail: setResourceThumbnail,
+        onClose: enableMapThumbnailViewer,
+        onAction: downloadResource
     }
 )(DetailsPanel);
 
-const ButtonViewer = ({
-    onClick,
-    hide,
-    variant,
-    size
-}) => {
-
+const ButtonViewer = ({ onClick, hide, variant, size, showMessage }) => {
     const handleClickButton = () => {
         onClick();
     };
 
-    return !hide
-        ? (<Button
+    return !hide ? (
+        <Button
             variant={variant}
             size={size}
             onClick={handleClickButton}
-        > <Message msgId="gnviewer.info"/>
-        </Button>)
-        : null
-    ;
+        >
+            {!showMessage ? <FaIcon name="info-circle" /> : <Message msgId="gnviewer.editInfo"/>}
+        </Button>
+    ) : null;
 };
 
 const ConnectedButton = connect(
-    createSelector([
-        isNewResource,
-        getResourceId
-    ],
-    (isNew, resourcePk) => ({
+    createSelector([isNewResource, getResourceId], (isNew, resourcePk) => ({
         hide: isNew || !resourcePk
     })),
     {
-        onClick: setControlProperty.bind(null, 'rightOverlay', 'enabled', 'DetailViewer')
+        onClick: setControlProperty.bind(
+            null,
+            'rightOverlay',
+            'enabled',
+            'DetailViewer'
+        )
     }
 )((ButtonViewer));
 
@@ -95,11 +117,11 @@ function DetailViewer({
     onEditAbstractResource,
     onEditThumbnail,
     canEdit,
-    width,
     hide,
     user,
     onClose
 }) {
+
 
     const handleTitleValue = (val) => {
         onEditResource(val);
@@ -109,7 +131,7 @@ function DetailViewer({
         onEditAbstractResource(val);
     };
     const handleEditThumbnail = (val) => {
-        onEditThumbnail(val);
+        onEditThumbnail(val, true);
     };
 
     const node = useDetectClickOut({
@@ -134,9 +156,7 @@ function DetailViewer({
         <OverlayContainer
             enabled={enabled}
             ref={node}
-            style={{
-                width
-            }}
+            className="gn-overlay-wrapper"
         >
             <ConnectedDetailsPanel
                 editTitle={handleTitleValue}
@@ -150,27 +170,23 @@ function DetailViewer({
     );
 }
 
-DetailViewer.propTypes = {
-    width: PropTypes.number
-};
-
-DetailViewer.defaultProps = {
-    width: 800
-};
-
 const DetailViewerPlugin = connect(
-    createSelector([
-        state => state?.controls?.rightOverlay?.enabled === 'DetailViewer',
-        canEditResource,
-        isNewResource,
-        getResourceId,
-        userSelector
-    ], (enabled, canEdit, isNew, resourcePk, user) => ({
-        enabled,
-        canEdit,
-        hide: isNew || !resourcePk,
-        user
-    })),
+    createSelector(
+        [
+            (state) =>
+                state?.controls?.rightOverlay?.enabled === 'DetailViewer',
+            canEditResource,
+            isNewResource,
+            getResourceId,
+            userSelector
+        ],
+        (enabled, canEdit, isNew, resourcePk, user) => ({
+            enabled,
+            canEdit,
+            hide: isNew || !resourcePk,
+            user
+        })
+    ),
     {
         onEditResource: editTitleResource,
         onEditAbstractResource: editAbstractResource,
@@ -179,19 +195,12 @@ const DetailViewerPlugin = connect(
     }
 )(withRouter(DetailViewer));
 
-
 export default createPlugin('DetailViewer', {
     component: DetailViewerPlugin,
     containers: {
-        ViewerLayout: {
-            name: 'DetailViewer',
-            target: 'rightOverlay',
-            priority: 1
-        },
         ActionNavbar: {
             name: 'DetailViewerButton',
-            Component: ConnectedButton,
-            priority: 1
+            Component: ConnectedButton
         }
     },
     epics: {},

@@ -38,7 +38,7 @@
             "label": "Versione"
         },
         "errorPage": {
-            "title":"Ops, Qualcosa è andato storto",
+            "title":"Ops, qualcosa è andato storto...",
             "subtitle":"Per favore clicca sull'icona qui sotto per ricaricare MapStore",
             "description":"Se vuoi segnalare questo problema, puoi mandare una mail alla nostra lista email per utenti",
             "descriptionAdmin":"Per favore contatta l'amministratore"
@@ -291,7 +291,7 @@
             "Examples": "Esempi",
             "LinkedinGroup": "Gruppo Linkedin Mapstore",
             "scrollTop": "Torna all'inizio della pagina",
-            "footerDescription": "<strong>GeoSolutions</strong> <a href=\"mailto:info@geosolutionsgroup.com\">info@geosolutionsgroup.com</a> <strong>US</strong> +1 (301) 337-7055 -  <strong>Italy</strong>: +39 0584 962313",
+            "footerDescription": "<strong>GeoSolutions</strong> <a href=\"mailto:sales@geosolutionsgroup.com\">sales@geosolutionsgroup.com</a>",
             "ml": {
                 "title": "Resta in contatto e tieniti aggiornato con le mailing list",
                 "subscribe_users": "Sottoscrivi la mailing list degli utenti",
@@ -307,6 +307,7 @@
             "confirm": "Acconsento"
         },
         "manager": {
+            "managerMenu": "Menu manager",
             "openInANewTab":"Apri mappa",
             "deleteMap":"Elimina Mappa",
             "deleteMapMessage": "Vuoi eliminare questa mappa?",
@@ -396,6 +397,11 @@
                 "createANewOne": "Crea una nuova GeoStory",
                 "deleteError": "Si è verificato un errore durante l'eliminazione della GeoStory",
                 "errorLoadingGeostories": "Si è verificato un errore durante il caricamento di GeoStories"
+            },
+            "contexts": {
+              "title": "Contesti ({count})",
+              "titleNoCount": "Contesti",
+              "noContextAvailable": "Nessun contesto disponibile"
             }
         },
         "map": {
@@ -461,7 +467,6 @@
             },
             "errors": {
                 "loading": {
-                    "title": "Errore di caricamento della mappa",
                     "notFound": "Mappa non trovata",
                     "notAccessible": "Mappa non accessibile",
                     "unknownError": "<p> <small> Uno dei seguenti motivi potrebbe essere la causa: </small> <ul><li> non hai il permesso di accedere </li> <li> stai cercando di accedere a una mappa che non esiste </li> <li> la mappa è stata rimossa </li> <li>la proiezione della mappa non è configurata</li></ul> <p>",
@@ -628,7 +633,7 @@
             "description": "Descrizione",
             "descriptionplaceholder": "Inserisci una descrizione...",
             "resolution": "Risoluzione:",
-            "defaultBackground": "Usa OSM come background",
+            "defaultBackground": "Usa il background di default",
             "printtooltip": "Stampa",
             "alternatives": {
                 "legend": "Includere la legenda",
@@ -643,9 +648,17 @@
                 "iconsSize": "Dimensione icone:",
                 "dpi": "Dpi:"
             },
-            "layoutWarning": "Layout non consentito"
+            "layoutWarning": "Layout non consentito",
+            "scale": "Scala",
+            "includeScale": "Includi nella stampa",
+            "disabledpreview": "La preview non è disponibile con questi parametri di stampa",
+            "outputFormat": "Formato",
+            "previewFormatUnsupported": "Formato non supportato per la preview",
+            "projection": "Sistema di coordinate",
+            "projectionmismatch": "Sistema di coordinate di stampa diverso da quello a schermo",
+            "graticule": "aggiungi griglia con label"
         },
-        "backgroundSwither":{
+        "backgroundSwitcher":{
             "tooltip": "Scegli lo sfondo"
         },
         "info":{
@@ -992,7 +1005,8 @@
                 "combo_placeholder": "Attributo",
                 "text_placeholder": "Digita il testo da cercare",
                 "attribute_filter_header": "Filtro Attributi",
-                "tooltipTextField": "usa <b>*</b> per qualsiasi carattere</br>usa <b>.</b> un solo carattere</br>usa <b>!</b> per i caratteri speciali (* e .)</br>",
+                "tooltipTextField": "usa <b>*</b> per qualsiasi carattere</br>usa . un solo carattere</br>usa <b>!</b> per i caratteri speciali (* e .)</br>",
+                "tooltipTextFieldCSS": "usa <b>%</b> per qualsiasi carattere</br>usa <b>_</b> un solo carattere</br>usa <b>\\</b> per i caratteri speciali (% e _)</br>",
                 "groupField": {
                     "any": "almeno una delle",
                     "all": "tutte le",
@@ -1153,7 +1167,10 @@
                 "notValidText": "Inserisci un testo ed una coordinata valida (+|- 90° lat, +|-180° lon)",
                 "notValidCircle": "Inserisci un raggio ed una coordinata valida (+|- 90° lat, +|-180° lon)",
                 "newFeature": "Nuovo"
-            }
+            },
+            "geometryError": "La configurazione della geometria non è valida",
+            "annotationSaveGeometryError": "Il salvataggio è disabilitato a causa di una geometria non valida, correggilo per salvare l'annotazione",
+            "resolveAllErrors": "Si prega di correggere gli errori prima di modificare altre geometrie"
         },
         "user":{
             "login": "Login",
@@ -1169,7 +1186,7 @@
             "passwordInvalid": "Password non valida",
             "username": "Username",
             "password": "Password",
-            "passwordMessage": "La password deve contenere almeno 6 caratteri. I valori validi per le password includono numeri, lettere minuscole o maiuscole e i seguenti caratteri speciali: !,@,#,$,%,&,*,_",
+            "passwordMessage": "La password deve contenere almeno 6 caratteri.",
             "passwordInvalidChar": "La password non deve contenere questi caratteri: {data}",
             "passwordChanged": "La password è stata cambiata",
             "passwordError": "Errore nel cambio della password",
@@ -1184,7 +1201,10 @@
             "detailsGroups": "Gruppi",
             "detailsEmail": "E-mail",
             "detailsCompany": "Company",
-            "detailsNotes": "Note"
+            "detailsNotes": "Note",
+            "userMenu": "Menu utente",
+            "generalInformation": "Generale",
+            "attributes": "Attributi"
         },
         "users": {
             "title": "Gestione Account",
@@ -1235,7 +1255,9 @@
           "noUsers": "Nessun utente membro di questo gruppo",
           "errorSaving": "Si è verificato un errore salvando questo gruppo:",
           "errorDelete": "Si è verificato un errore rimuovendo questo utente:",
-          "confirmDeleteGroup": "Sei sicuro di voler cancellare questo gruppo?"
+          "confirmDeleteGroup": "Sei sicuro di voler cancellare questo gruppo?",
+          "generalInformation": "Generale",
+          "members": "Membri"
         },
         "share": {
             "title": "Condividi",
@@ -1269,8 +1291,14 @@
             "coordinate": "Coordinate",
             "coordTooltip": "Clicca sulla mappa per ottenere le coordinate del centro",
             "zoomToolTip": "Min: 1 e Max: 35",
+            "headingToolTip": "Min: 0° e Max: 360°",
+            "rollToolTip": "Min: -90° e Max: 90°",
+            "pitchToolTip": "Min: -90° e Max: 90°",
             "showSectionId": "Includi posizione di scorrimento",
             "showConnections": "Mostra connessioni",
+            "heading": "Angolo di rotta",
+            "roll": "Angolo di rollio",
+            "pitch": "Angolo di inclinazione",
             "sizeOptions": {
                 "width": "larghezza",
                 "height": "altezza"
@@ -1353,7 +1381,6 @@
             "end": "Data di fine ",
             "notAvailable": "Non disponibile",
             "title": "Catalogo",
-            "tooltip": "Aggiungi livelli alla mappa",
             "autoload": "Ricerca alla selezione del servizio",
             "clearValueText": "Cancella selezione",
             "noResultsText": "Nessun risultato trovato",
@@ -1422,6 +1449,28 @@
             "format": {
                 "noOption": "Nessuna opzione",
                 "loading": "Caricamento in corso..."
+            },
+            "filter": {
+                "static": {
+                    "label": "Filtro statico",
+                    "info": "Il filtro viene applicato sempre, anche nella ricerca vuota"
+                },
+                "dynamic": {
+                    "label": "Filtro dinamico",
+                    "info": "Il filtro viene utilizzato quando è presente il testo di ricerca e viene applicato in 'AND' con filtro statico",
+                    "helpText": "Usa il segnaposto ${searchText} nel modello per inserire la stringa di ricerca"
+                },
+                "error": "Sintassi xml non valida"
+            },
+            "autoSetVisibilityLimits": {
+                "label": "Imposta limite di visibilità",
+                "tooltip": "Applica automaticamente i limiti di visibilità suggeriti dal server"
+            },
+            "domainAliases": {
+              "title": "Alias di dominio",
+              "helpTooltip": "Questa opzione viene utilizzata per suddividere il contenuto in più sottodomini",
+              "addAliasTooltip": "Aggiungi alias",
+              "removeAliasTooltip": "Rimuovi alias"
             }
         },
         "uploader": {
@@ -1585,6 +1634,7 @@
             "featureClose": "Sicuro di voler chiudere la griglia?",
             "delete": "Confermi di cancellare {count} feature?",
             "missingGeometry": "Geometria mancante",
+            "zoomObject": "Zoom alla feature",
             "filter": {
                 "placeholders": {
                     "default": "Cerca...",
@@ -1720,7 +1770,8 @@
                 "nodatainviewport": "Nessun dato per la vista selezionata",
                 "timeoutExpired": "Il servizio ha impiegato troppo tempo a rispondere. La query potrebbe essere troppo complicata o il server troppo occupato",
                 "genericError": "C'è stato un errore durante la generazione del grafico",
-                "genericErrorWithMessage": "C'è stato un errore durante la generazione del grafico: \"{message}\""
+                "genericErrorWithMessage": "C'è stato un errore durante la generazione del grafico: \"{message}\"",
+                "layerNotAvailable": "Il livello {layerName} non è più disponibile"
             },
             "builder": {
                 "header": {
@@ -1753,9 +1804,34 @@
                     "addLayer": "Aggiungi un livello alla mappa",
                     "useTheSelectedLayer": "Usa il livello selezionato",
                     "connectToAMap": "Connetti ad un altro widget",
-                    "connectToTheMap": "Connetti all'altro widget",
+                    "connectToTheMap": "Collegati alla mappa",
                     "selectMapToConnect": "Seleziona il widget da connettere",
-                    "clearConnection": "Disconnetti"
+                    "clearConnection": "Disconnetti",
+                    "classAttributes": {
+                        "classColor": "Colore della Classe",
+                        "classLabel": "Etichetta della Classe",
+                        "classValue": "Valore della Classe",
+                        "color": "Colore",
+                        "confirmModalMessage": "Chiudere ed eliminare valori non classificati?",
+                        "classificationAttribute": "Attributo di Classificazione",
+                        "customLabels": "Etichette personalizzate",
+                        "barChartCustomLabelsExample": "<div><p><code>${legendValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo Y.</p><p></p><h5>Esempio</h5><dl><dt><b>Attributo Y:</b></dt><dd>POPULATION</dd><dt><b>Etichetta di classe:</b></dt><dd><code>${legendValue}</code> California</dd><dt><b>Risultato:</b></dt><dd>POPULATION California</dd></dl></div>",
+                        "pieChartCustomLabelsExample": "<div><p><code>${groupByValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo 'Raggruppa per'.</p><p>gli elementi della legenda con lo stesso contenuto di testo verranno raggruppati nel grafico.</p><h5>Esempio</h5><dl><dt><b>Attributo 'Raggruppa per':</b></dt><dd>POPULATION</dd><dt><b>Etichetta di classe:</b></dt><dd><code>${groupByValue}</code> California</dd><dt><b>Risultato:</b></dt><dd>POPULATION California</dd></dl></div>",
+                        
+                        "pieRangeDefaultChartCustomLabelsExample": "<div><p><code>${groupByValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo 'Raggruppa per'.</p><p>gli elementi della legenda con lo stesso contenuto di testo verranno raggruppati nel grafico.</p><h5>Esempio</h5><dl><dt><b>Attributo 'Raggruppa per:'</b></dt><dd>POPULATION</dd><dt><b>Classe:</b></dt><dd><code>${groupByValue}</code> California</dd><dt><b>Risultato:</b></dt><dd>POPULATION California</dd></dl></div>",
+                        "pieRangeClassChartCustomLabelsExample": "<div><p><code>${groupByValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo 'Raggruppa per'.</p><p><code>${legendValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo Y.</p><p><code>${minValue}</code>può essere utilizzato come segnaposto per sostituire il valore minimo della classe.</p><p><code>${maxValue}</code>può essere utilizzato come segnaposto per sostituire il valore massimo della classe.</p><p>gli elementi della legenda con lo stesso contenuto di testo verranno raggruppati nel grafico.</p><h5>Esempio</h5><dl><dt><b>attributo 'Raggruppa per'.</b></dt><dd>POPULATION</dd><dt><b>attributo Y:</b></dt><dd>LAND_KM</dd><dt><b>Valore massimo della Classe:</b></dt><dd>0</dd><dt><b>Valore minimo della Classe:</b></dt><dd>10000</dd><dt><b>Classe:</b></dt><dd><code>${groupByValue}</code> California<code>${legendValue}</code>: <code>${minValue}</code> - <code>${maxValue}</code></dd><dt><b>Risultato:</b></dt><dd>POPULATION California LAND_KM: 0 - 10000</dd></dl></div>",
+                        "barRangeDefaultChartCustomLabelsExample": "<div><p><code>${legendValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo Y.</p><p></p><h5>Esempio</h5><dl><dt><b>Atributo Y:</b></dt><dd>POPULATION</dd><dt><b>Classe:</b></dt><dd><code>${legendValue}</code> California</dd><dt><b>Risultato:</b></dt><dd>POPULATION California</dd></dl></div>",
+                        "barRangeClassChartCustomLabelsExample": "<div><p><code>${minValue}</code>può essere utilizzato come segnaposto per sostituire il valore minimo della classe.</p><p><code>${maxValue}</code>può essere utilizzato come segnaposto per sostituire il valore massimo della classe.</p><p><code>${legendValue}</code> può essere utilizzato come segnaposto per sostituire il valore dell'attributo Y.</p><p>gli elementi della legenda con lo stesso contenuto di testo verranno raggruppati nel grafico.</p><h5>Example</h5><dl><dt><b>Attributo:</b></dt><dd>POPULATION</dd><dt><b>Classe:</b></dt><dd><code>${groupByValue}</code> California</dd><dt><b>Risultato:</b></dt><dd>POPULATION California</dd></dl></div>",
+                        
+                        "defaultClassLabel": "Etichetta della Classe di Default",
+                        "defaultColorRamp": "Rampa di Colori di Default",
+                        "defaultColor": "Colore di Default",
+                        "defaultCustomLabel": "Etichetta di Default",
+                        "editCustomColors": "Modifica Colori Personalizzati",
+                        "maxValue": "Valore Massimo",
+                        "minValue": "Valore Minimo",
+                        "title": "Impostazioni dei Colori Personalizzati"
+                    }
                 },
                 "errors": {
                     "noAttributesTitle": "Nessun attributo disponibile",
@@ -1890,6 +1966,9 @@
               "yAxisLabel": "Etichetta legenda",
               "title": "Opzioni avanzate",
               "legend": "Legend",
+              "barChartType": "Tipo di Grafico a Barre",
+              "groupedBarChart": "Raggruppato",
+              "stackedBarChart": "Impilato",
               "axisTypes": {
                 "auto": "Auto",
                 "linear": "Lineare",
@@ -2134,6 +2213,12 @@
             "fontWeightBold": "Grassetto",
             "boolTrue": "Si",
             "boolFalse": "No",
+            "colorMapType": {
+              "label": "Tipo di mappa dei colori",
+              "ramp": "Rampa",
+              "intervals": "Intervalli",
+              "values": "Valori"
+            },
             "addRuleBefore": "Aggiungi una nuova voce prima",
             "addRuleAfter": "Aggiungi nuova voce dopo",
             "remove": "Rimuovere",
@@ -2194,6 +2279,7 @@
             "emptyRuleEditor": "Non ci sono regole per questo stile. Aggiungi una nuova regola facendo clic sul tipo di stile desiderato nella barra degli strumenti",
             "classificationError": "Servizio non disponibile. Attualmente non è possibile creare una classificazione",
             "classificationRasterError": "Servizio non disponibile. Attualmente non è possibile creare una classificazione raster",
+            "classificationRasterUniqueIntervalError": "Impossibile eseguire la classificazione di valori univoci su raster di tipo float, sono supportati solo numeri interi. Prova invece un'altra classificazione",
             "classificationUniqueIntervalError": "Superato il limite massimo di intervalli! Stai tentando di generare una classificazione ad intervallo univoco con un attributo che contiene più di {intervalsForUnique} classi diverse. La classificazione ad intervallo univoco dovrebbe essere applicata agli attributi con un insieme limitato di intervalli per consentire una migliore leggibilità dello stile. Puoi provare un metodo diverso per l'attributo selezionato",
             "redChannel": "Canale rosso",
             "greenChannel": "Canale verde",
@@ -2655,6 +2741,8 @@
         "defaultMapBackgroundsServiceTitle": "Sfondi predefiniti",
         "backgroundSelector": {
             "addTooltip": "Aggiungi nuovo sfondo",
+            "editTooltip": "Modifica sfondo",
+            "deleteTooltip": "Elimina lo sfondo",
             "confirmDelete": "Sei sicuro di voler eliminare lo sfondo \"{title}\"?"
         },
         "stepper": {
@@ -2786,6 +2874,10 @@
           "Share": {
             "description": "Permette di condividere la mappa in diversi modi (link, QR-Code, embed, social network ...)",
             "title": "Strumento di condivisione"
+          },
+          "StreetView": {
+            "title": "Street View",
+            "description": "Strumento Street view, per visualizzare le immagini di Google Street View dalla mappa"
           },
           "StyleEditor": {
             "description": "Editor degli stili dei layer",
@@ -3344,6 +3436,17 @@
           "successRemoved": "Sessione utente cancellata",
           "remove": "Reset Sessione Utente",
           "confirmRemove": "Sei sicuro di voler ripristinare la configurazione di default?"
-        }
+        },
+        "streetView": {
+          "title": "Street View",
+          "description": "Strumento Street view, per visualizzare le immagini di Google Street View dalla mappa",
+          "tooltip": "Apri Street View",
+          "emptyTitle": "Street View",
+          "emptyDescription": "Clicca sulla mappa per cominciare a visualizzare le immagini di Street View",
+          "messages": {
+            "noDataForPosition": "Non ci sono dati Street View per questa posizione",
+            "unknownError": "Errore sconosciuto"
+          }
+      }
     }
 }

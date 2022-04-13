@@ -16,29 +16,28 @@
     }
   },
   "scripts": {
-    "compile": "mapstore-project compile && node postCompile",
+    "compile": "mapstore-project compile && node postCompile && npm run docs",
     "start": "mapstore-project start",
     "test": "mapstore-project test",
     "test:watch": "mapstore-project test:watch",
-    "lint": "eslint js --ext .jsx,.js"
+    "lint": "eslint js --ext .jsx,.js --fix",
+    "docs": "jsdoc2md -f js/**/* -t README.hbs > ../../docs/client.md"
   },
   "author": "GeoSolutions",
   "license": "BSD-2-Clause",
   "devDependencies": {
-    "@mapstore/project": "1.0.18"
+    "@mapstore/project": "1.0.21",
+    "dotenv": "10.0.0",
+    "jsdoc-to-markdown": "7.1.0"
   },
   "dependencies": {
-    "font-awesome": "4.7.0",
+    "@react-three/drei": "8.6.1",
+    "@react-three/fiber": "7.0.25",
     "dompurify": "2.2.6",
+    "font-awesome": "4.7.0",
     "mapstore": "file:MapStore2",
-    "react-helmet": "6.1.0"
-  },
-  "geonode": {
-    "devServer": {
-      "host": "localhost",
-      "proxyTargetHost": "localhost:8000",
-      "protocol": "http"
-    }
+    "react-helmet": "6.1.0",
+    "three": "0.136.0"
   },
   "mapstore": {
     "output": "dist",

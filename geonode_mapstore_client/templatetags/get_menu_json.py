@@ -15,9 +15,16 @@ def _handle_single_item(menu_item):
         m_item['target'] = '_blank'
     return m_item
 
+def _is_mobile_device(context):
+    if context and 'request' in context:
+        req = context['request']
+        return req.user_agent.is_mobile
+    return False
 
-@register.simple_tag
-def get_base_left_topbar_menu():
+@register.simple_tag(takes_context=True)
+def get_base_left_topbar_menu(context):
+
+    is_mobile = _is_mobile_device(context)
 
     return [
         {
@@ -38,7 +45,7 @@ def get_base_left_topbar_menu():
                     "type": "link",
                     "href": "/services/?limit=5",
                     "label": "Remote Services"
-                }
+                } if not is_mobile else None
             ]
         },
         {
@@ -55,12 +62,28 @@ def get_base_left_topbar_menu():
             "type": "link",
             "href": "/catalogue/#/search/?f=dashboard",
             "label": "Dashboards"
+        },
+        {
+            "type": "link",
+            "href": "/catalogue/#/search/?f=featured",
+            "label": "Featured"
         }
     ]
 
 
 @register.simple_tag(takes_context=True)
 def get_base_right_topbar_menu(context):
+
+    is_mobile = _is_mobile_device(context)
+
+    if is_mobile:
+        return []
+
+    home = {
+        "type": "link",
+        "href": "/",
+        "label": "Home"
+    }
     user = context.get('request').user
     about = {
             "label": "About",
@@ -97,13 +120,15 @@ def get_base_right_topbar_menu(context):
                 "type": "link",
                 "href": "/groups/create/",
                 "label": "Create group"
-            }
+            }if user.is_superuser else None,
         ])
-    return [about]
+    return [home, about]
 
 
 @register.simple_tag(takes_context=True)
 def get_user_menu(context):
+
+    is_mobile = _is_mobile_device(context)
     user = context.get('request').user
 
     if not user.is_authenticated:
@@ -123,18 +148,42 @@ def get_user_menu(context):
     devider = {
         "type": "divider"
     }
+
+    profile_link = {
+        "type": "link",
+        # get href of user profile
+        "href": user.get_absolute_url(),
+        "label": "Profile"
+    }
+
+    logout = {
+        "type": "link",
+        "href": "/account/logout/?next=/",
+        "label": "Log out"
+    }
+
+    if is_mobile:
+        return [
+            {
+                # get src of user avatar
+                "image": avatar_url(user),
+                "type": "dropdown",
+                "className": "gn-user-menu-dropdown",
+                "items": [
+                    profile_link,
+                    devider,
+                    logout
+                ]
+            }
+        ]
+
     profile = {
         # get src of user avatar
         "image": avatar_url(user),
         "type": "dropdown",
         "className": "gn-user-menu-dropdown",
         "items": [
-            {
-                "type": "link",
-                # get href of user profile
-                "href": user.get_absolute_url(),
-                "label": "Profile"
-            },
+            profile_link,
             {
                 "type": "link",
                 "href": "/social/recent-activity",
@@ -160,12 +209,18 @@ def get_user_menu(context):
             "label": "Help"
         },
         devider,
-        {
-            "type": "link",
-            "href": "/account/logout/?next=/",
-            "label": "Log out"
-        }
+        logout
     ]
+    monitoring = []
+    if settings.MONITORING_ENABLED:
+        monitoring = [
+            devider,
+            {
+                "type": "link",
+                "href": "/monitoring/",
+                "label": "Monitoring & Analytics"
+            }
+        ]
     admin_only = [
         {
             "type": "link",
@@ -176,15 +231,8 @@ def get_user_menu(context):
             "type": "link",
             "href": "/geoserver/",
             "label": "GeoServer"
-        },
-        devider,
-        {
-            "type": "link",
-            "href": "/monitoring/",
-            "label": "Monitoring & Analytics"
-        },
-        devider,
-    ] + general
+        }
+    ] + monitoring + [devider] + general
 
     if user.is_superuser:
         profile['items'].extend(admin_only)

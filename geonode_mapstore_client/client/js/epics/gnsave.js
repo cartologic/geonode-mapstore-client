@@ -8,7 +8,7 @@
 
 import axios from '@mapstore/framework/libs/ajax';
 import { Observable } from 'rxjs';
-import { mapInfoSelector } from '@mapstore/framework/selectors/map';
+import { mapInfoSelector, mapSelector } from '@mapstore/framework/selectors/map';
 import { userSelector } from '@mapstore/framework/selectors/security';
 import {
     error as errorNotification,
@@ -21,13 +21,17 @@ import {
     saveError,
     savingResource,
     SAVE_DIRECT_CONTENT,
+    clearSave,
     saveContent
 } from '@js/actions/gnsave';
 import {
     setResource,
+    SET_MAP_THUMBNAIL,
     resetGeoLimits,
     setResourceCompactPermissions,
-    loadingResourceConfig
+    updateResourceProperties,
+    loadingResourceConfig,
+    enableMapThumbnailViewer
 } from '@js/actions/gnresource';
 import {
     getResourceByPk,
@@ -37,6 +41,7 @@ import {
     createMap,
     updateMap,
     updateDocument,
+    setMapThumbnail,
     updateCompactPermissionsByPk,
     getResourceByUuid
 } from '@js/api/geonode/v2';
@@ -45,7 +50,6 @@ import uuid from 'uuid';
 import {
     getResourceName,
     getResourceDescription,
-    getResourceThumbnail,
     getPermissionsPayload,
     getResourceData,
     getResourceId,
@@ -63,7 +67,8 @@ import {
 } from '@js/actions/resourceservice';
 import {
     ResourceTypes,
-    cleanCompactPermissions
+    cleanCompactPermissions,
+    toGeoNodeMapConfig
 } from '@js/utils/ResourceUtils';
 import {
     ProcessTypes,
@@ -71,11 +76,20 @@ import {
 } from '@js/utils/ResourceServiceUtils';
 import { setControlProperty } from '@mapstore/framework/actions/controls';
 
+function parseMapBody(body, map) {
+    const geoNodeMap = toGeoNodeMapConfig(body.data, map);
+    return {
+        ...body,
+        ...geoNodeMap
+    };
+}
+
 const SaveAPI = {
     [ResourceTypes.MAP]: (state, id, body) => {
+        const map =  mapSelector(state) || {};
         return id
-            ? updateMap(id, { ...body, id })
-            : createMap(body);
+            ? updateMap(id, { ...parseMapBody(body, map), id })
+            : createMap(parseMapBody(body, map));
     },
     [ResourceTypes.GEOSTORY]: (state, id, body) => {
         const user = userSelector(state);
@@ -115,8 +129,7 @@ export const gnSaveContent = (action$, store) =>
             const data = getDataPayload(state, contentType);
             const body = {
                 'title': action.metadata.name,
-                'abstract': action.metadata.description,
-                'thumbnail_url': action.metadata.thumbnail,
+                ...(action.metadata.description && { 'abstract': action.metadata.description }),
                 ...(data && { 'data': JSON.parse(JSON.stringify(data)) })
             };
             const currentResource = getResourceData(state);
@@ -155,7 +168,41 @@ export const gnSaveContent = (action$, store) =>
                 .startWith(savingResource());
 
         });
+export const gnSetMapThumbnail = (action$, store) =>
+    action$.ofType(SET_MAP_THUMBNAIL)
+        .switchMap((action) => {
 
+            const state = store.getState();
+            const contentType = state.gnresource?.data?.resource_type || 'map';
+            const resourceIDThumbnail = state?.gnresource?.id;
+            const currentResource = state.gnresource?.data || {};
+
+            const body = {
+                srid: action.bbox.crs,
+                bbox: [ Object.values(action.bbox.bounds)[2],
+                    Object.values(action.bbox.bounds)[0],
+                    Object.values(action.bbox.bounds)[3],
+                    Object.values(action.bbox.bounds)[1]
+                ]
+            };
+
+            return Observable.defer(() => setMapThumbnail(resourceIDThumbnail, body, contentType))
+                .switchMap((res) => {
+                    return Observable.of(
+                        updateResourceProperties({ ...currentResource, thumbnail_url: `${res.thumbnail_url}?${Math.random()}` }),
+                        enableMapThumbnailViewer(false),
+                        clearSave(),
+                        ...([successNotification({ title: "gnviewer.thumbnailsaved", message: "gnviewer.thumbnailsaved" })])
+
+                    );
+                })
+                .catch((error) => {
+                    return Observable.of(
+                        saveError(error.data),
+                        errorNotification({ title: "gnviewer.thumbnailnotsaved", message: "gnviewer.thumbnailnotsaved" })
+                    );
+                });
+        });
 export const gnSaveDirectContent = (action$, store) =>
     action$.ofType(SAVE_DIRECT_CONTENT)
         .switchMap(() => {
@@ -181,11 +228,9 @@ export const gnSaveDirectContent = (action$, store) =>
                     const geoLimitsErrors = geoLimitsResponses.filter(({ error }) => error);
                     const name = getResourceName(state);
                     const description = getResourceDescription(state);
-                    const thumbnail = getResourceThumbnail(state);
                     const metadata = {
                         name: (name) ? name : resource?.title,
                         description: (description) ? description : resource?.abstract,
-                        thumbnail: (thumbnail) ? thumbnail : resource?.thumbnail_url,
                         extension: resource?.extension,
                         href: resource?.href
                     };
@@ -257,10 +302,7 @@ export const gnWatchStopCopyProcessOnSave = (action$, store) =>
             }
             const isError = action?.payload?.error || action?.payload?.output?.status === ProcessStatus.FAILED;
             if (isError) {
-                return Observable.of(errorNotification({
-                    title: "map.mapError.errorTitle",
-                    message: "map.mapError.errorDefault"
-                }));
+                return Observable.empty();
             }
             const newResourceUuid = action?.payload?.output?.output_params?.output?.uuid;
             if (newResourceUuid === undefined) {
@@ -277,6 +319,7 @@ export const gnWatchStopCopyProcessOnSave = (action$, store) =>
 export default {
     gnSaveContent,
     gnSaveDirectContent,
+    gnSetMapThumbnail,
     gnWatchStopPermissionsProcess,
     gnWatchStopCopyProcessOnSave
 };

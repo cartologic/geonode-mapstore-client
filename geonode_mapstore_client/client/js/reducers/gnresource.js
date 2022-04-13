@@ -19,13 +19,15 @@ import {
     EDIT_TITLE_RESOURCE,
     EDIT_ABSTRACT_RESOURCE,
     EDIT_THUMBNAIL_RESOURCE,
+    SET_RESOURCE_THUMBNAIL,
     SET_SELECTED_DATASET_PERMISSIONS,
     RESET_RESOURCE_STATE,
     LOADING_RESOURCE_CONFIG,
     RESOURCE_CONFIG_ERROR,
     SET_RESOURCE_COMPACT_PERMISSIONS,
     UPDATE_RESOURCE_COMPACT_PERMISSIONS,
-    RESET_GEO_LIMITS
+    RESET_GEO_LIMITS,
+    ENABLE_MAP_THUMBNAIL_VIEWER
 } from '@js/actions/gnresource';
 
 import {
@@ -144,8 +146,26 @@ function gnresource(state = defaultState, action) {
             ...state,
             data: {
                 ...state?.data,
-                thumbnail_url: action?.thumbnailUrl
+                thumbnail_url: action?.thumbnailUrl,
+                thumbnailChanged: action?.thumbnailChanged
             }
+        };
+    }
+
+    case SET_RESOURCE_THUMBNAIL: {
+        return {
+            ...state,
+            data: {
+                ...state?.data,
+                updatingThumbnail: true
+            }
+        };
+    }
+
+    case ENABLE_MAP_THUMBNAIL_VIEWER: {
+        return {
+            ...state,
+            showMapThumbnail: action.enabled
         };
     }
 

@@ -32,7 +32,7 @@ import {
 } from '@js/utils/SearchUtils';
 import { withResizeDetector } from 'react-resize-detector';
 
-import { getResourceTypes, getCategories, getRegions, getOwners, getKeywords } from '@js/api/geonode/v2';
+import { getCategories, getRegions, getOwners, getKeywords } from '@js/api/geonode/v2';
 import MetaTags from "@js/components/MetaTags";
 
 import {
@@ -41,15 +41,13 @@ import {
 import { getTotalResources } from '@js/selectors/search';
 import ConnectedCardGrid from '@js/routes/catalogue/ConnectedCardGrid';
 import DeleteResource from '@js/plugins/DeleteResource';
+import Notifications from '@mapstore/framework/plugins/Notifications';
 import SaveAs from '@js/plugins/SaveAs';
 const { DeleteResourcePlugin } = DeleteResource;
 const { SaveAsPlugin } = SaveAs;
+const { NotificationsPlugin } = Notifications;
 
 const suggestionsRequestTypes = {
-    resourceTypes: {
-        filterKey: 'filter{resource_type.in}',
-        loadOptions: params => getResourceTypes(params, 'filter{resource_type.in}')
-    },
     categories: {
         filterKey: 'filter{category.identifier.in}',
         loadOptions: params => getCategories(params, 'filter{category.identifier.in}')
@@ -81,9 +79,9 @@ function Search({
     width,
     totalResources,
     resource,
-    siteName
+    siteName,
+    loading
 }) {
-
     const {
         filterMenuItemsAllowed,
         cardOptionsItemsAllowed,
@@ -221,12 +219,14 @@ function Search({
                             totalResources={totalResources}
                             totalFilters={queryFilters.length}
                             filtersActive={!!(queryFilters.length > 0)}
+                            loading={loading}
                         />
                     </ConnectedCardGrid>
                 </div>
             </div>
             <DeleteResourcePlugin redirectTo={false} />
-            <SaveAsPlugin closeOnSave labelId="gnviewer.clone"/>
+            <SaveAsPlugin closeOnSave labelId="gnviewer.clone" />
+            <NotificationsPlugin />
         </>
     );
 }
@@ -262,15 +262,17 @@ const ConnectedSearch = connect(
         state => state?.controls?.gnFiltersPanel?.enabled || null,
         getParsedGeoNodeConfiguration,
         getTotalResources,
-        state => state?.gnsettings?.siteName || "Geonode"
-    ], (params, user, resource, isFiltersPanelEnabled, config, totalResources, siteName) => ({
+        state => state?.gnsettings?.siteName || "Geonode",
+        state => state?.gnsearch.loading || false
+    ], (params, user, resource, isFiltersPanelEnabled, config, totalResources, siteName, loading) => ({
         params,
         user,
         resource,
         isFiltersPanelEnabled,
         config,
         totalResources,
-        siteName
+        siteName,
+        loading
     })),
     {
         onSearch: searchResources,
