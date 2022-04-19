@@ -102,6 +102,7 @@ export function setupConfiguration({
     // so it's possible to override in a custom project
     setConfigProp('extensionsRegistry', '/static/mapstore/extensions/index.json');
     const {
+        geoNodeConfiguration,
         supportedLocales: defaultSupportedLocales,
         ...config
     } = localConfig;
@@ -122,6 +123,8 @@ export function setupConfiguration({
     setSupportedLocales(supportedLocales);
     const locale = supportedLocales[geoNodePageConfig.languageCode]?.code;
     setConfigProp('locale', locale);
+    const menuFilters = geoNodeConfiguration?.menu?.items?.filter(({ type }) => type === 'filter');
+    setConfigProp('menuFilters', menuFilters);
     const geoNodeResourcesInfo = getConfigProp('geoNodeResourcesInfo') || {};
     setConfigProp('geoNodeResourcesInfo', { ...geoNodeResourcesInfo, ...resourcesTotalCount });
     const userDetails = geoNodePageConfig.userDetails;
@@ -163,6 +166,7 @@ export function setupConfiguration({
     return {
         query,
         securityState,
+        geoNodeConfiguration,
         geoNodePageConfig,
         pluginsConfigKey: query.config || geoNodePageConfig.pluginsConfigKey,
         mapType: geoNodePageConfig.mapType,

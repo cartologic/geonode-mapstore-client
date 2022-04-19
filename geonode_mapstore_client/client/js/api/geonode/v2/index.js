@@ -21,6 +21,7 @@ import castArray from 'lodash/castArray';
 import get from 'lodash/get';
 import { getUserInfo } from '@js/api/geonode/v1';
 import { getConfigProp } from '@mapstore/framework/utils/ConfigUtils';
+import { setFilterById } from '@js/utils/GNSearchUtils';
 import { mergeConfigsPatch } from '@mapstore/patcher';
 
 let endpoints = {
@@ -343,7 +344,7 @@ export const getConfiguration = (configUrl = '/static/mapstore/configs/localConf
 
 
 let availableResourceTypes;
-export const getResourceTypes = ({}) => {
+export const getResourceTypes = ({}, filterKey = 'resource-types') => {
     if (availableResourceTypes) {
         return new Promise(resolve => resolve(availableResourceTypes));
     }
@@ -359,6 +360,7 @@ export const getResourceTypes = ({}) => {
                         value,
                         selectOption
                     };
+                    setFilterById(filterKey + value, resourceType);
                     return resourceType;
                 });
             return [...availableResourceTypes];
